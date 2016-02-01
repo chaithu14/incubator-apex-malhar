@@ -3,7 +3,12 @@ package com.datatorrent.contrib.storm;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.esotericsoftware.kryo.DefaultSerializer;
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
+
 import com.datatorrent.api.Context;
+import com.datatorrent.api.DefaultOutputPort;
 import com.datatorrent.api.InputOperator;
 import com.datatorrent.api.Operator;
 import backtype.storm.generated.StormTopology;
@@ -12,16 +17,21 @@ import backtype.storm.topology.IRichSpout;
 
 public class SpoutWrapper implements InputOperator, Operator.ActivationListener
 {
-  private final IRichSpout spout;
-  private final String name;
-  private final SpoutCollector collector;
+  public final transient DefaultOutputPort output = new DefaultOutputPort();
+  @FieldSerializer.Bind(JavaSerializer.class)
+  private IRichSpout spout;
+  private String name;
+  private transient SpoutCollector collector;
   private StormTopology stormTopology;
 
+  public SpoutWrapper()
+  {
+
+  }
   public SpoutWrapper(IRichSpout spout, String name)
   {
     this.spout = spout;
     this.name = name;
-    this.collector = new SpoutCollector();
   }
 
   @Override
@@ -45,9 +55,10 @@ public class SpoutWrapper implements InputOperator, Operator.ActivationListener
   @Override
   public void setup(Context.OperatorContext context)
   {
+    this.collector = new SpoutCollector(output);
     Map map = new HashMap<>();
     this.spout.open(map, Helper.createTopologyContext(context, this.spout, this.name, this.stormTopology, map),
-      new SpoutOutputCollector(this.collector));
+      new SpoutOutputCollectorWrapper(this.collector));
   }
 
   @Override
@@ -76,5 +87,30 @@ public class SpoutWrapper implements InputOperator, Operator.ActivationListener
   public void setStormTopology(StormTopology stormTopology)
   {
     this.stormTopology = stormTopology;
+  }
+
+  public SpoutCollector getCollector()
+  {
+    return collector;
+  }
+
+  public IRichSpout getSpout()
+  {
+    return spout;
+  }
+
+  public String getName()
+  {
+    return name;
+  }
+
+  public void setSpout(IRichSpout spout)
+  {
+    this.spout = spout;
+  }
+
+  public void setName(String name)
+  {
+    this.name = name;
   }
 }

@@ -9,7 +9,17 @@ import backtype.storm.spout.ISpoutOutputCollector;
 public class SpoutCollector implements ISpoutOutputCollector
 {
 
-  private final transient DefaultOutputPort output = new DefaultOutputPort();
+  public final transient DefaultOutputPort output;
+
+  public SpoutCollector()
+  {
+    output = null;
+  }
+  public SpoutCollector(DefaultOutputPort out)
+  {
+    this.output = out;
+  }
+  //public final transient DefaultOutputPort output = new DefaultOutputPort();
 
   @Override
   public List<Integer> emit(String s, List<Object> list, Object o)

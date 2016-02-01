@@ -4,14 +4,15 @@ import java.util.Collection;
 import java.util.List;
 
 import com.datatorrent.api.DefaultOutputPort;
+import com.datatorrent.api.annotation.OutputPortFieldAnnotation;
 
 import backtype.storm.task.IOutputCollector;
 import backtype.storm.tuple.Tuple;
 
-public class BoltCollector extends DefaultOutputPort implements IOutputCollector
+public class BoltCollector implements IOutputCollector
 {
-  
-  private final DefaultOutputPort out;
+  @OutputPortFieldAnnotation(optional = true)
+  public transient final DefaultOutputPort out;
 
   
   public BoltCollector(){

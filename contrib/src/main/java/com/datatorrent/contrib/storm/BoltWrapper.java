@@ -3,6 +3,9 @@ package com.datatorrent.contrib.storm;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.esotericsoftware.kryo.serializers.FieldSerializer;
+import com.esotericsoftware.kryo.serializers.JavaSerializer;
+
 import com.datatorrent.api.Context;
 import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.api.Operator;
@@ -12,28 +15,32 @@ import backtype.storm.task.OutputCollector;
 import backtype.storm.task.TopologyContext;
 import backtype.storm.topology.IRichBolt;
 import backtype.storm.tuple.Tuple;
+import backtype.storm.tuple.Values;
 
 public class BoltWrapper implements Operator
 {
-  
-  private final transient IRichBolt bolt;
+  @FieldSerializer.Bind(JavaSerializer.class)
+  private IRichBolt bolt;
   private Map config = new HashMap();
-  private final String name;
+  private String name;
   private StormTopology stormTopology;
 
+  public BoltWrapper()
+  {
+
+  }
   public BoltWrapper(final IRichBolt bolt, String name) throws IllegalArgumentException {
     this.bolt = bolt;
     this.name = name;
   }
-  
-  private final transient BoltCollector outputCollector = new BoltCollector();
-  
-  private final transient DefaultInputPort<Tuple> input = new DefaultInputPort<Tuple>(){
+
+  private transient BoltCollector outputCollector;
+  public final transient DefaultInputPort<Values> input = new DefaultInputPort<Values>(){
 
     @Override
-    public void process(Tuple tuple)
+    public void process(Values tuple)
     {
-      bolt.execute(tuple);
+      bolt.execute(new StormTuple(tuple));
     }
     
   };
@@ -52,7 +59,9 @@ public class BoltWrapper implements Operator
   @Override
   public void setup(Context.OperatorContext context)
   {
-    OutputCollector stormCollector = new OutputCollector(outputCollector); 
+    this.outputCollector = new BoltCollector();
+    OutputCollector stormCollector = new OutputCollector(outputCollector);
+    //OutputCollector stormCollector = new OutputCollector(null);
     final TopologyContext topologyContext = Helper.createTopologyContext(context, this.bolt, this.name, this.stormTopology, config);
     this.bolt.prepare(config, topologyContext, stormCollector);
 
@@ -62,5 +71,30 @@ public class BoltWrapper implements Operator
   public void teardown()
   {
     this.bolt.cleanup();
+  }
+
+  /*public BoltCollector getOutputCollector()
+  {
+    return outputCollector;
+  }*/
+
+  public String getName()
+  {
+    return name;
+  }
+
+  public IRichBolt getBolt()
+  {
+    return bolt;
+  }
+
+  public void setBolt(IRichBolt bolt)
+  {
+    this.bolt = bolt;
+  }
+
+  public void setName(String name)
+  {
+    this.name = name;
   }
 }
