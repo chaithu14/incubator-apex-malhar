@@ -25,7 +25,7 @@ public abstract class AbstractBoltSink implements IRichBolt
   public final void prepare(final Map stormConf, final TopologyContext context,
                             final OutputCollector collector) {
     this.prepareSimple(stormConf, context);
-    if (context.getThisComponentId() != null && context.getComponentCommon(context.getThisComponentId()).get_parallelism_hint() > 1) {
+    if (context.getComponentCommon(context.getThisComponentId()).get_parallelism_hint() > 1) {
       this.prefix = context.getThisTaskId() + "> ";
     }
   }

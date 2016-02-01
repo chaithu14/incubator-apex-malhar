@@ -65,8 +65,8 @@ public class Helper
       taskId = context.getId();
 
       List<Integer> sortedTasks = new ArrayList<Integer>(1);
-      for (int i = 1; i <= 1; ++i) {
-        taskToComponents.put(i, operatorName);
+      for (int i = 0; i < 1; ++i) {
+        taskToComponents.put(taskId + i, operatorName);
         sortedTasks.add(i);
       }
       componentToSortedTasks.put(operatorName, sortedTasks);

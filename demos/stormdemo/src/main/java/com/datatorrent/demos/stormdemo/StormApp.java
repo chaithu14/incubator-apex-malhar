@@ -22,24 +22,6 @@ public class StormApp implements StreamingApplication
   @Override
   public void populateDAG(DAG dag, Configuration configuration)
   {
-    /*SpoutWrapper wordcount = new SpoutWrapper();
-    wordcount.setSpout(new WordCountInMemorySpout());
-    wordcount.setName("read");
-    BoltWrapper printword = new BoltWrapper();
-    printword.setBolt(new BoltPrintSink(new OutputFormatter()));
-    printword.setName("write");
-    BoltWrapper tokenizer = new BoltWrapper();
-    tokenizer.setBolt(new BoltTokenizer());
-    tokenizer.setName("tokenizing");
-    BoltWrapper counter = new BoltWrapper();
-    counter.setBolt(new BoltCounter());
-    counter.setName("count");
-
-    dag.addOperator("read", wordcount);
-    dag.addOperator("tokens", tokenizer);
-    dag.addOperator("count", counter);
-    dag.addOperator("write", printword);*/
-
     SpoutWrapper wordcount = dag.addOperator("read",new SpoutWrapper(new WordCountInMemorySpout(), "read"));
     BoltWrapper printword = dag.addOperator("write", new BoltWrapper(new BoltPrintSink(new OutputFormatter()),"write"));
     BoltWrapper tokenizer = dag.addOperator("tokenizing", new BoltWrapper(new BoltTokenizer(), "tokenizing"));
