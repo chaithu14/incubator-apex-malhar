@@ -18,6 +18,11 @@ public class BoltCollector implements IOutputCollector
   public BoltCollector(){
     this.out=new DefaultOutputPort<>();
   }
+
+  public BoltCollector(DefaultOutputPort out)
+  {
+    this.out = out;
+  }
   @Override
   public List<Integer> emit(final String streamId, final Collection<Tuple> anchors, final List<Object> tuple)
   {

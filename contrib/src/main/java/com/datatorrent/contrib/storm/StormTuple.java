@@ -85,14 +85,11 @@ public class StormTuple implements backtype.storm.tuple.Tuple
   @Override
   public String getString(int i)
   {
-    return null;
+    return (String) this.stormTuple.get(i);
   }
 
   @Override
-  public Integer getInteger(int i)
-  {
-    return null;
-  }
+  public Integer getInteger(int i) {return (Integer) this.stormTuple.get(i); }
 
   @Override
   public Long getLong(int i)

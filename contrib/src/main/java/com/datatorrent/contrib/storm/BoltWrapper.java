@@ -8,7 +8,9 @@ import com.esotericsoftware.kryo.serializers.JavaSerializer;
 
 import com.datatorrent.api.Context;
 import com.datatorrent.api.DefaultInputPort;
+import com.datatorrent.api.DefaultOutputPort;
 import com.datatorrent.api.Operator;
+import com.datatorrent.api.annotation.OutputPortFieldAnnotation;
 
 import backtype.storm.generated.StormTopology;
 import backtype.storm.task.OutputCollector;
@@ -24,7 +26,8 @@ public class BoltWrapper implements Operator
   private Map config = new HashMap();
   private String name;
   private StormTopology stormTopology;
-
+  @OutputPortFieldAnnotation(optional = true)
+  public final transient DefaultOutputPort output = new DefaultOutputPort();
   public BoltWrapper()
   {
 
@@ -59,8 +62,8 @@ public class BoltWrapper implements Operator
   @Override
   public void setup(Context.OperatorContext context)
   {
-    this.outputCollector = new BoltCollector();
-    OutputCollector stormCollector = new OutputCollector(outputCollector);
+    this.outputCollector = new BoltCollector(output);
+    OutputCollector stormCollector = new BoltOutputCollectorWrapper(outputCollector);
     //OutputCollector stormCollector = new OutputCollector(null);
     final TopologyContext topologyContext = Helper.createTopologyContext(context, this.bolt, this.name, this.stormTopology, config);
     this.bolt.prepare(config, topologyContext, stormCollector);

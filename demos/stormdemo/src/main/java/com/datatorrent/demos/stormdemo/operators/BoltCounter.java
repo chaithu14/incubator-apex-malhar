@@ -9,6 +9,7 @@ import backtype.storm.tuple.Fields;
 import backtype.storm.tuple.Tuple;
 import backtype.storm.tuple.Values;
 
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,7 +66,7 @@ public class BoltCounter implements IRichBolt {
    * A counter helper to emit immutable tuples to the given stormCollector and avoid unnecessary object
    * creating/deletion.
    */
-  private static final class Count {
+  private static final class Count /*implements Serializable*/ {
     public int count;
 
     public Count() {/* nothing to do */}

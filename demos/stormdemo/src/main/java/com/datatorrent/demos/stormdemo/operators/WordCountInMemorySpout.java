@@ -8,7 +8,7 @@ import backtype.storm.tuple.Fields;
  */
 public final class WordCountInMemorySpout extends FiniteInMemorySpout {
   private static final long serialVersionUID = 8832143302409465843L;
-  private static String[] words = {"This", "is","Spout"};
+  private static String[] words = {"This", "is","Spout", "This", "Application"};
 
   public WordCountInMemorySpout() {
     super(words);
