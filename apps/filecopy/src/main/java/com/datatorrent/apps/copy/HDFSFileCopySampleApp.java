@@ -17,7 +17,7 @@
  * under the License.
  */
 
-package com.datatorrent.modules.app;
+package com.datatorrent.apps.copy;
 
 import org.apache.hadoop.conf.Configuration;
 
@@ -29,7 +29,7 @@ import com.datatorrent.lib.io.fs.HDFSFileCopyModule;
 import com.datatorrent.lib.io.fs.HDFSInputModule;
 
 /**
- * Sample application for HDFS to HDFS file copy
+ * Application for HDFS to HDFS file copy
  */
 @ApplicationAnnotation(name = "HDFSFileCopySampleApp")
 public class HDFSFileCopySampleApp implements StreamingApplication

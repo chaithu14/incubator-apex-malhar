@@ -27,7 +27,6 @@
     <version>3.4.0-incubating-SNAPSHOT</version>
   </parent>
 
-  <groupId>org.apache.apex</groupId>
   <artifactId>filecopy</artifactId>
   <packaging>jar</packaging>
 
@@ -37,7 +36,7 @@
     <semver.plugin.skip>true</semver.plugin.skip>
   </properties>
 
-  <name>Apache Apex Malhar (incubating) Logstream Application</name>
+  <name>Apache Apex Malhar (incubating) File copy Application</name>
 
   <build>
     <plugins>
@@ -88,19 +87,6 @@
         </exclusion>
       </exclusions>
     </dependency>
-  <!-- 
-    <dependency>
-      <groupId>org.apache.apex</groupId>
-      <artifactId>malhar-contrib</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.codehaus.janino</groupId>
-      <artifactId>janino</artifactId>
-      <version>2.7.8</version>
-      <type>jar</type>
-    </dependency>
-     -->
   </dependencies>
 
 </project>

@@ -27,7 +27,6 @@ import org.junit.Test;
 import com.google.common.collect.Lists;
 
 import com.datatorrent.lib.io.block.BlockMetadata.FileBlockMetadata;
-import com.datatorrent.lib.io.fs.Synchronizer;
 import com.datatorrent.lib.io.fs.AbstractFileSplitter.FileMetadata;
 import com.datatorrent.lib.io.fs.Synchronizer.OutputFileMetadata;
 import com.datatorrent.lib.testbench.CollectorTestSink;

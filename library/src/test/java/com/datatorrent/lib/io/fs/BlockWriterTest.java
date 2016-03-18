@@ -40,7 +40,6 @@ import com.datatorrent.api.Context;
 import com.datatorrent.api.DAG;
 import com.datatorrent.lib.helper.OperatorContextTestHelper;
 import com.datatorrent.lib.io.block.AbstractBlockReader.ReaderRecord;
-import com.datatorrent.lib.io.fs.BlockWriter;
 import com.datatorrent.netlet.util.Slice;
 
 /**

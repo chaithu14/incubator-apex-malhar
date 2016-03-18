@@ -385,11 +385,15 @@ public abstract class AbstractFileSplitter extends BaseOperator
     protected FileMetadata(FileMetadata fileMetadata)
     {
       this();
-      this.filePath = fileMetadata.filePath;
-      this.fileName = fileMetadata.fileName;
-      this.numberOfBlocks = fileMetadata.numberOfBlocks;
-      
-      discoverTime = System.currentTimeMillis();
+      filePath = fileMetadata.filePath;
+      fileName = fileMetadata.fileName;
+      numberOfBlocks = fileMetadata.numberOfBlocks;
+      dataOffset = fileMetadata.dataOffset;
+      fileLength = fileMetadata.fileLength;
+      discoverTime = fileMetadata.discoverTime;
+      blockIds = fileMetadata.blockIds;
+      isDirectory = fileMetadata.isDirectory;
+      relativePath = fileMetadata.relativePath;
     }
 
     /**
