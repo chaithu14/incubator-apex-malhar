@@ -392,6 +392,11 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
       this.store = store;
     }
 
+    public StoreContext()
+    {
+
+    }
+
     public String getTimeFields()
     {
       return timeFields;
