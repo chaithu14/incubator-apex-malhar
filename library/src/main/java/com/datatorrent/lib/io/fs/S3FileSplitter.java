@@ -44,7 +44,9 @@ public class S3FileSplitter extends FSFileSplitter
     try {
       FileSystem fs = scanner.getFSInstance();
       String scheme = fs.getScheme();
-      LOG.info("----------- Setup: " + scheme);
+      if(scheme.equals("s3") || scheme.equals("s3n")) {
+        setSequencialFileRead(true);
+      }
     } catch (IOException e) {
       e.printStackTrace();
     }
