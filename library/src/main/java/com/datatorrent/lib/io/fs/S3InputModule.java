@@ -7,7 +7,11 @@ import com.datatorrent.lib.io.block.BlockReader;
  * Module emits, <br/>
  * 1. FileMetadata 2. BlockMetadata 3. Block Bytes.<br/><br/>
  * The module reads data in parallel, following parameters can be configured<br/>
- * 1. files: list of file(s)/directories to read<br/>
+ * 1. files: List of file(s)/directories to read. files would be in the form of
+ *           SCHEME://AccessKey:SecretKey@BucketName/FileOrDirectory ,
+ *           SCHEME://AccessKey:SecretKey@BucketName/FileOrDirectory , ....
+ *           where SCHEME is the protocal scheme for the file system.
+ *                 AccessKey is the AWS access key and SecretKey is the AWS Secret Key<br/>
  * 2. filePatternRegularExp: Files names matching given regex will be read<br/>
  * 3. scanIntervalMillis: interval between two scans to discover new files in input directory<br/>
  * 4. recursive: if scan recursively input directories<br/>

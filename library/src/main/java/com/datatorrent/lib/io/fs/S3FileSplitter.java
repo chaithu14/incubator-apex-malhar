@@ -20,17 +20,18 @@ package com.datatorrent.lib.io.fs;
 
 
 import java.io.IOException;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import org.apache.hadoop.fs.FileSystem;
-
 import com.datatorrent.api.Context;
 
+/**
+ * S3FileSplitter extends from FSFileSplitter and dissables the parallel read functionality
+ * explicitly in case of s3 or s3n schemes.
+ * Parallel read will work only if the scheme is "s3a" and the Hadoop version is 2.7+.
+ * Parallel read doesn't work in the case of the scheme is "s3n/s3". In this case, this operator explicitly
+ * disables the parallel read functionality.
+ */
 public class S3FileSplitter extends FSFileSplitter
 {
-  private static final Logger LOG = LoggerFactory.getLogger(S3FileSplitter.class);
   public S3FileSplitter()
   {
     super();
@@ -44,6 +45,7 @@ public class S3FileSplitter extends FSFileSplitter
     try {
       FileSystem fs = scanner.getFSInstance();
       String scheme = fs.getScheme();
+      // Parallel read doesn't support incase of scheme is s3 (or) s3n.
       if(scheme.equals("s3") || scheme.equals("s3n")) {
         setSequencialFileRead(true);
       }
