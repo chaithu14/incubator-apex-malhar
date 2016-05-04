@@ -18,6 +18,8 @@
  */
 package com.datatorrent.demos.dimensions;
 
+import org.joda.time.Duration;
+
 import org.apache.hadoop.conf.Configuration;
 
 import com.datatorrent.api.DefaultInputPort;
@@ -65,8 +67,14 @@ public class Application implements StreamingApplication
       input2.setTimeBucket(bucketTime);
 
       POJOJoinOperator joinOper = dag.addOperator("Join", new POJOJoinOperator());
-      InMemoryStore lStore = new InMemoryStore(timeInterval, (int) bucketTime);
-      InMemoryStore rStore = new InMemoryStore(timeInterval, (int) bucketTime);
+      ManagedStateStore lStore = new ManagedStateStore();
+      lStore.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketTime));
+      lStore.getTimeBucketAssigner().setExpireBefore(Duration.millis(timeInterval));
+      ManagedStateStore rStore = new ManagedStateStore();
+      rStore.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketTime));
+      lStore.getTimeBucketAssigner().setExpireBefore(Duration.millis(timeInterval));
+      /*InMemoryStore lStore = new InMemoryStore(timeInterval, (int) bucketTime);
+      InMemoryStore rStore = new InMemoryStore(timeInterval, (int) bucketTime);*/
       joinOper.setLeftStore(lStore);
       joinOper.setRightStore(rStore);
       joinOper.setIncludeFields("timestamp,customerId,productId,regionId,amount;productCategory");

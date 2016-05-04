@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceStability;
 
 import com.datatorrent.api.Component;
+import com.datatorrent.api.Context;
 
 /**
  * <p>
@@ -30,7 +31,7 @@ import com.datatorrent.api.Component;
  * </p>
  */
 @InterfaceStability.Unstable
-public interface JoinStore extends Component
+public interface JoinStore extends Component<Context.OperatorContext>
 {
   /**
    * Generate the store

@@ -94,7 +94,7 @@ public class InMemoryStore extends TimeBasedStore<TimeEvent> implements JoinStor
   private static final Logger logger = LoggerFactory.getLogger(InMemoryStore.class);
 
   @Override
-  public void setup(Context context)
+  public void setup(Context.OperatorContext context)
   {
     super.setup();
   }
