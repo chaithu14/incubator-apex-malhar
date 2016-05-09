@@ -89,4 +89,6 @@ public interface JoinStore extends Component<Context.OperatorContext>
    * @param isOuter Specifies the join type is outer join or not
    */
   void isOuterJoin(boolean isOuter);
+
+  void beforeCheckpoint(long windowId);
 }

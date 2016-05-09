@@ -25,7 +25,7 @@ import org.apache.hadoop.conf.Configuration;
 import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.common.util.BaseOperator;
 import com.datatorrent.lib.io.ConsoleOutputOperator;
-import com.datatorrent.lib.join.InMemoryStore;
+import com.datatorrent.lib.join.ManagedStateStore;
 import com.datatorrent.lib.join.POJOJoinOperator;
 
 import com.datatorrent.api.DAG;
@@ -55,24 +55,28 @@ public class Application implements StreamingApplication
       long bucketTime = 60000 * 1;
       JsonSalesGenerator input = dag.addOperator("Input", JsonSalesGenerator.class);
       input.setAddProductCategory(false);
-      input.setMaxTuplesPerWindow(100);
+      input.setMaxTuplesPerWindow(10);
       input.setTuplesPerWindowDeviation(0);
       input.setTimeInterval(timeInterval);
+      input.setMaxProductId(1000);
       input.setTimeBucket(bucketTime);
 
       JsonProductGenerator input2 = dag.addOperator("Prodcut", JsonProductGenerator.class);
-      input2.setMaxTuplesPerWindow(100);
+      input2.setMaxTuplesPerWindow(10);
       input2.setTuplesPerWindowDeviation(0);
       input2.setTimeInterval(timeInterval);
       input2.setTimeBucket(bucketTime);
+      input2.setMaxProductId(1000);
 
       POJOJoinOperator joinOper = dag.addOperator("Join", new POJOJoinOperator());
       ManagedStateStore lStore = new ManagedStateStore();
       lStore.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketTime));
       lStore.getTimeBucketAssigner().setExpireBefore(Duration.millis(timeInterval));
+      //lStore.setOutputClass(TimeEventImpl.class);
       ManagedStateStore rStore = new ManagedStateStore();
       rStore.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketTime));
-      lStore.getTimeBucketAssigner().setExpireBefore(Duration.millis(timeInterval));
+      rStore.getTimeBucketAssigner().setExpireBefore(Duration.millis(timeInterval));
+      //rStore.setOutputClass(TimeEventImpl.class);
       /*InMemoryStore lStore = new InMemoryStore(timeInterval, (int) bucketTime);
       InMemoryStore rStore = new InMemoryStore(timeInterval, (int) bucketTime);*/
       joinOper.setLeftStore(lStore);
@@ -86,7 +90,7 @@ public class Application implements StreamingApplication
       ConsoleOutputOperator console = dag.addOperator("Console", new ConsoleOutputOperator());
       dag.addStream("SalesInput", input.outputPort, joinOper.input1);
       dag.addStream("JsonProductStream", input2.outputPort, joinOper.input2);
-      dag.addStream("Output", joinOper.outputPort, console.input).setLocality(DAG.Locality.CONTAINER_LOCAL);
+      dag.addStream("Output", joinOper.outputPort, console.input)/*.setLocality(DAG.Locality.CONTAINER_LOCAL)*/;
 
     }
 }

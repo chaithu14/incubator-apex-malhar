@@ -80,6 +80,12 @@ public class InMemoryStore extends TimeBasedStore<TimeEvent> implements JoinStor
   }
 
   @Override
+  public void beforeCheckpoint(long windowId)
+  {
+
+  }
+
+  @Override
   public List<TimeEvent> getValidTuples(Object tuple)
   {
     return super.getValidTuples((TimeEvent)tuple);
