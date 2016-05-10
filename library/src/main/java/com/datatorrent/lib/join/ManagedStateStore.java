@@ -37,6 +37,7 @@ public class ManagedStateStore extends ManagedTimeStateImpl implements JoinStore
     LOG.info("getValid Tuple - 1: {}", key);
     List<Object> output = new ArrayList<>();
     if (value != null) {
+      LOG.info("getValid Tuple - 1: {} -> {}", key,value.buffer);
       Input lInput = new Input(value.buffer);
       //output.add(kryo.readObject(lInput, outputClass));
       output.add(kryo.readClassAndObject(lInput));
@@ -61,6 +62,7 @@ public class ManagedStateStore extends ManagedTimeStateImpl implements JoinStore
     kryo.writeClassAndObject(output2, value);
     output2.close();
     super.put(0,te.getTime(),new Slice(bos1.toByteArray()), new Slice(bos2.toByteArray()));
+    LOG.info("Put Object: {}", bos1.toByteArray());
     return true;
   }
 

@@ -58,7 +58,7 @@ public class Application implements StreamingApplication
       input.setMaxTuplesPerWindow(10);
       input.setTuplesPerWindowDeviation(0);
       input.setTimeInterval(timeInterval);
-      input.setMaxProductId(1000);
+      input.setMaxProductId(100);
       input.setTimeBucket(bucketTime);
 
       JsonProductGenerator input2 = dag.addOperator("Prodcut", JsonProductGenerator.class);
@@ -66,7 +66,7 @@ public class Application implements StreamingApplication
       input2.setTuplesPerWindowDeviation(0);
       input2.setTimeInterval(timeInterval);
       input2.setTimeBucket(bucketTime);
-      input2.setMaxProductId(1000);
+      input2.setMaxProductId(100);
 
       POJOJoinOperator joinOper = dag.addOperator("Join", new POJOJoinOperator());
       ManagedStateStore lStore = new ManagedStateStore();
