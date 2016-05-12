@@ -58,7 +58,7 @@ public class Application implements StreamingApplication
       input.setMaxTuplesPerWindow(10);
       input.setTuplesPerWindowDeviation(0);
       input.setTimeInterval(timeInterval);
-      input.setMaxProductId(100);
+      input.setMaxProductId(1000);
       input.setTimeBucket(bucketTime);
 
       JsonProductGenerator input2 = dag.addOperator("Prodcut", JsonProductGenerator.class);

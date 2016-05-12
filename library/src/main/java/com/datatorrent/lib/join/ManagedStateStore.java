@@ -33,8 +33,9 @@ public class ManagedStateStore extends ManagedTimeStateImpl implements JoinStore
     ByteArrayOutputStream bos1 = new ByteArrayOutputStream();
     Output output1 = new Output(bos1);
     kryo.writeObject(output1, key);
+    output1.close();
+    LOG.info("getValid Tuple - 1: {} -> {}", key, bos1.toByteArray());
     Slice value = super.getSync(0, new Slice(bos1.toByteArray()));
-    LOG.info("getValid Tuple - 1: {}", key);
     List<Object> output = new ArrayList<>();
     if (value != null) {
       LOG.info("getValid Tuple - 1: {} -> {}", key,value.buffer);
@@ -59,7 +60,7 @@ public class ManagedStateStore extends ManagedTimeStateImpl implements JoinStore
     output1.close();
     ByteArrayOutputStream bos2 = new ByteArrayOutputStream();
     Output output2 = new Output(bos2);
-    kryo.writeClassAndObject(output2, value);
+    kryo.writeClassAndObject(output2, tuple);
     output2.close();
     super.put(0,te.getTime(),new Slice(bos1.toByteArray()), new Slice(bos2.toByteArray()));
     LOG.info("Put Object: {}", bos1.toByteArray());

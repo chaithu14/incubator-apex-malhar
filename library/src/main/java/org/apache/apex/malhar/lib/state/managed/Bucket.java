@@ -236,9 +236,11 @@ public interface Bucket extends ManagedStateComponent
 
     private Slice getFromMemory(Slice key)
     {
+      //LOG.info("Get From Memory: {} ", key.toByteArray());
       //search the cache for key
       BucketedValue bucketedValue = flash.get(key);
       if (bucketedValue != null) {
+        //LOG.info("Get From Memory - 1: {} ", key.toByteArray());
         return bucketedValue.getValue();
       }
 
@@ -246,6 +248,7 @@ public interface Bucket extends ManagedStateComponent
         //traverse the checkpointed data in reverse order
         bucketedValue = checkpointedData.get(window).get(key);
         if (bucketedValue != null) {
+          //LOG.info("Get From Memory - 2: {} ", key.toByteArray());
           return bucketedValue.getValue();
         }
       }
@@ -254,6 +257,7 @@ public interface Bucket extends ManagedStateComponent
         //traverse the committed data in reverse order
         bucketedValue = committedData.get(window).get(key);
         if (bucketedValue != null) {
+          //LOG.info("Get From Memory - 3: {} ", key.toByteArray());
           return bucketedValue.getValue();
         }
       }
@@ -268,6 +272,7 @@ public interface Bucket extends ManagedStateComponent
 
     private Slice getFromReaders(Slice key, long timeBucket)
     {
+      //LOG.info("Get From Readers: {} ", key.toByteArray());
       try {
         if (cachedBucketMetas == null) {
           cachedBucketMetas = managedStateContext.getBucketsFileSystem().getAllTimeBuckets(bucketId);
@@ -283,6 +288,7 @@ public interface Bucket extends ManagedStateComponent
           }
           return valSlice;
         } else {
+          //LOG.info("Get From Readers - 1: {} ", key.toByteArray());
           //search all the time buckets
           for (BucketsFileSystem.TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas) {
             if (managedStateContext.getKeyComparator().compare(key, immutableTimeBucketMeta.getFirstKey()) >= 0) {
@@ -309,6 +315,7 @@ public interface Bucket extends ManagedStateComponent
     @Override
     public Slice get(Slice key, long timeBucket, ReadSource readSource)
     {
+      LOG.info("Get From Bucket: {} ", key.toByteArray());
       switch (readSource) {
         case MEMORY:
           return getFromMemory(key);
@@ -334,12 +341,20 @@ public interface Bucket extends ManagedStateComponent
     {
       FileAccess.FileReader fileReader = readers.get(timeBucket);
       if (fileReader != null) {
-        return readValue(fileReader, key, timeBucket);
+        Slice value = readValue(fileReader, key, timeBucket);
+        if (value != null) {
+          //LOG.info("Get From Time Bucket - 1: {} ", value);
+        }
+        return value;
       }
       //file reader is not loaded and is null
       try {
         if (loadFileReader(timeBucket)) {
-          return readValue(readers.get(timeBucket), key, timeBucket);
+          Slice value = readValue(readers.get(timeBucket), key, timeBucket);
+          if (value != null) {
+            //LOG.info("Get From Time Bucket - 2: {} ", key.toByteArray());
+          }
+          return value;
         }
         return null;
       } catch (IOException e) {
@@ -382,6 +397,7 @@ public interface Bucket extends ManagedStateComponent
     {
       BucketedValue bucketedValue = flash.get(key);
       if (bucketedValue == null) {
+        //LOG.info("Inserting into Bucket: {} -> {}", key.toByteArray(), value.toByteArray());
         bucketedValue = new BucketedValue();
         flash.put(key, bucketedValue);
         sizeInBytes.getAndAdd(key.length);
