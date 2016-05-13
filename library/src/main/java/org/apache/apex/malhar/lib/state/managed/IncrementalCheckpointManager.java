@@ -122,7 +122,7 @@ public class IncrementalCheckpointManager extends FSWindowDataManager
       Long windowId = windowsToTransfer.poll();
       if (windowId != null) {
         try {
-          LOG.debug("transfer window {}", windowId);
+          LOG.info("transfer window {}", windowId);
           //bucket id => bucket data(key => value, time-buckets)
           Map<Long, Map<Slice, Bucket.BucketedValue>> buckets = savedWindows.remove(windowId);
 

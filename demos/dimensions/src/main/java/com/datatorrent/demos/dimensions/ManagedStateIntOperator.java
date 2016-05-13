@@ -1,6 +1,9 @@
 package com.datatorrent.demos.dimensions;
 import java.math.BigInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.apex.malhar.lib.state.managed.ManagedStateImpl;
 
 import com.datatorrent.api.Context;
@@ -15,6 +18,7 @@ import com.datatorrent.netlet.util.Slice;
 
 public class ManagedStateIntOperator implements Operator, Operator.CheckpointListener, Operator.CheckpointNotificationListener
 {
+  private static final Logger LOG = LoggerFactory.getLogger(ManagedStateIntOperator.class);
   private ManagedStateImpl managedState;
   private long time = System.currentTimeMillis();
   private transient Decomposer dc = new Decomposer.DefaultDecomposer();
@@ -49,11 +53,13 @@ public class ManagedStateIntOperator implements Operator, Operator.CheckpointLis
     }
   }
 
-  /*public Object get(Integer key)
+  public Object get(Integer key)
   {
     byte[] keybytes = dc.decompose(key);
+    LOG.info("Get: {}", key);
     Slice value = managedState.getSync(0, new Slice(keybytes));
     if (value != null && value.length != 0) {
+      LOG.info("Get - Value: {}", value);
       return dc.compose(value.buffer);
     }
     return null;
@@ -61,13 +67,14 @@ public class ManagedStateIntOperator implements Operator, Operator.CheckpointLis
 
   public boolean put(Object tuple)
   {
+    LOG.info("Put: {}", tuple);
     byte[] keybytes = dc.decompose(tuple);
     byte[] valuebytes = dc.decompose(tuple);
     managedState.put(0, new Slice(keybytes), new Slice(keybytes));
     return true;
-  }*/
+  }
 
-  public Object get(Integer key)
+  /*public Object get(Integer key)
   {
     byte[] keybytes = BigInteger.valueOf(key).toByteArray();
     Slice value = managedState.getSync(0, new Slice(keybytes));
@@ -82,7 +89,7 @@ public class ManagedStateIntOperator implements Operator, Operator.CheckpointLis
     managedState.put(0, new Slice(BigInteger.valueOf(tuple).toByteArray()),
       new Slice(BigInteger.valueOf(tuple).toByteArray()));
     return true;
-  }
+  }*/
 
   @Override
   public void beginWindow(long windowId)

@@ -181,6 +181,7 @@ public class BucketsFileSystem implements ManagedStateComponent
       } else {
         //the time bucket existed so we need to read the file and then re-write it
         TreeMap<Slice, Slice> fileData = new TreeMap<>(managedStateContext.getKeyComparator());
+        LOG.info("WriteBucketData: {} -> {}", timeBucket, getFileName(timeBucket));
         FileAccess.FileReader fileReader = getReader(bucketId, getFileName(timeBucket));
         fileReader.readFully(fileData);
         fileReader.close();
@@ -204,9 +205,11 @@ public class BucketsFileSystem implements ManagedStateComponent
         }
       }
       fileWriter.close();
+      LOG.info("WriteBucketData - Rename: {} -> {}", tmpFileName, getFileName(timeBucket));
       rename(bucketId, tmpFileName, getFileName(timeBucket));
       tbm.updateTimeBucketMeta(windowId, dataSize, firstKey);
       updateTimeBuckets(tbm);
+      LOG.info("WriteBucketData - Update Metadata");
     }
 
     updateBucketMetaFile(bucketId);

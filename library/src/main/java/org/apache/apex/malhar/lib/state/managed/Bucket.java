@@ -294,6 +294,7 @@ public interface Bucket extends ManagedStateComponent
             if (managedStateContext.getKeyComparator().compare(key, immutableTimeBucketMeta.getFirstKey()) >= 0) {
               //keys in the time bucket files are sorted so if the first key in the file is greater than the key being
               //searched, the key will not be present in that file.
+              LOG.info("getFromReaders: {}", immutableTimeBucketMeta.getTimeBucketId());
               Slice valSlice = getValueFromTimeBucketReader(key, immutableTimeBucketMeta.getTimeBucketId());
               if (valSlice != null) {
                 BucketedValue bucketedValue = new BucketedValue(immutableTimeBucketMeta.getTimeBucketId(), valSlice);
@@ -339,6 +340,7 @@ public interface Bucket extends ManagedStateComponent
      */
     private Slice getValueFromTimeBucketReader(Slice key, long timeBucket)
     {
+      LOG.info("GetValueFrmTimeBucket: {}", timeBucket);
       FileAccess.FileReader fileReader = readers.get(timeBucket);
       if (fileReader != null) {
         Slice value = readValue(fileReader, key, timeBucket);
@@ -367,7 +369,8 @@ public interface Bucket extends ManagedStateComponent
       Slice valSlice = new Slice(null, 0, 0);
       try {
         if (fileReader.seek(key)) {
-          fileReader.next(dummyGetKey, valSlice);
+          boolean flag = fileReader.next(dummyGetKey, valSlice);
+          LOG.info("readValue: {} -> {}", flag, fileReader);
           return valSlice;
         } else {
           return null;
