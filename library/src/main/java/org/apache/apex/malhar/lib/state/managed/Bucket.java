@@ -288,9 +288,10 @@ public interface Bucket extends ManagedStateComponent
           }
           return valSlice;
         } else {
-          //LOG.info("Get From Readers - 1: {} ", key.toByteArray());
+          LOG.info("Get From Readers - 1: {} ", key.toByteArray());
           //search all the time buckets
           for (BucketsFileSystem.TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas) {
+            //LOG.info("Get From Readers - 2 : {} -> {} ", key.toByteArray(), immutableTimeBucketMeta.getFirstKey());
             if (managedStateContext.getKeyComparator().compare(key, immutableTimeBucketMeta.getFirstKey()) >= 0) {
               //keys in the time bucket files are sorted so if the first key in the file is greater than the key being
               //searched, the key will not be present in that file.
@@ -349,6 +350,7 @@ public interface Bucket extends ManagedStateComponent
         }
         return value;
       }
+      LOG.info("GetValueFrmTimeBucket - 1: {}", timeBucket);
       //file reader is not loaded and is null
       try {
         if (loadFileReader(timeBucket)) {

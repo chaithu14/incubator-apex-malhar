@@ -255,6 +255,7 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
     leftStore.getStore().beforeCheckpoint(windowId);
     rightStore.getStore().beforeCheckpoint(windowId);
   }
+
   /**
    * Convert the given tuple to event
    *

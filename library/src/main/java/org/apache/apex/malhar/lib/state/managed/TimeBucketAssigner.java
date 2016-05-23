@@ -22,6 +22,8 @@ import javax.validation.constraints.NotNull;
 
 import org.joda.time.Duration;
 import org.joda.time.Instant;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer;
 import com.esotericsoftware.kryo.serializers.JavaSerializer;
@@ -61,6 +63,7 @@ import com.datatorrent.lib.appdata.query.WindowBoundedService;
  */
 public class TimeBucketAssigner implements ManagedStateComponent
 {
+  private static final Logger LOG = LoggerFactory.getLogger(TimeBucketAssigner.class);
   @NotNull
   private Instant referenceInstant = new Instant();
 
@@ -120,6 +123,7 @@ public class TimeBucketAssigner implements ManagedStateComponent
 
       initialized = true;
     }
+    LOG.info("BucketSpanMillis: {} , Expire: {} , numOfBuckets: {}", bucketSpanMillis, expireBefore.getMillis(), numBuckets);
     lowestTimeBucket = (start - fixedStart) / bucketSpanMillis;
     windowBoundedService = new WindowBoundedService(bucketSpanMillis, expiryTask);
     windowBoundedService.setup(context);
