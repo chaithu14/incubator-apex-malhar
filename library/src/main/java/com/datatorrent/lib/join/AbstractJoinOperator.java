@@ -24,6 +24,9 @@ import java.util.List;
 
 import javax.validation.constraints.NotNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.hadoop.classification.InterfaceStability;
 import com.datatorrent.api.AutoMetric;
 import com.datatorrent.api.Context;
@@ -62,8 +65,9 @@ import com.datatorrent.common.util.BaseOperator;
  * @tags join
  */
 @InterfaceStability.Unstable
-public abstract class AbstractJoinOperator<T> extends BaseOperator implements Operator.CheckpointListener
+public abstract class AbstractJoinOperator<T> extends BaseOperator implements Operator.CheckpointListener, Operator.CheckpointNotificationListener
 {
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractJoinOperator.class);
   @AutoMetric
   private long tuplesJoinedPerSec;
   private double windowTimeSec;
@@ -129,11 +133,13 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
    */
   protected void processTuple(T tuple)
   {
+    //LOG.info("processTuple start: {}", isLeft);
     JoinStore store = isLeft ? leftStore.getStore() : rightStore.getStore();
     TimeEvent t = createEvent(tuple);
     if (store.put(t)) {
       join(t, isLeft);
     }
+    //LOG.info("processTuple end: {}", isLeft);
   }
 
   private void populateFields()
@@ -175,10 +181,11 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
     } else {
       value = (ArrayList<TimeEvent>)store.getUnMatchedTuples();
     }
-
+    //LOG.info("join - 1: {} -> {} ", tuple, isLeft);
     // Join the input tuple with the joined tuples
     if (value != null) {
       List<T> result = new ArrayList<>();
+      //LOG.info("join - 2: {} -> {} ", tuple, value.size());
       for (TimeEvent joinedValue : value) {
         T output = createOutputTuple();
         Object tupleValue = null;
@@ -193,6 +200,7 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
       if (tuple != null) {
         tuple.setMatch(true);
       }
+      //LOG.info("join - 3: {} -> {} ", tuple, result.size());
       if (result.size() != 0) {
         outputPort.emit(result);
         tuplesCount += result.size();
@@ -204,6 +212,7 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
   @Override
   public void endWindow()
   {
+    //LOG.info("End Window");
     if (strategy.equals(JoinStrategy.LEFT_OUTER_JOIN) || strategy.equals(JoinStrategy.OUTER_JOIN)) {
       join(null, false);
     }
@@ -218,7 +227,10 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
   @Override
   public void beginWindow(long windowId)
   {
+    //LOG.info("Begin Window");
     super.beginWindow(windowId);
+    leftStore.getStore().beginWindow(windowId);
+    rightStore.getStore().beginWindow(windowId);
     tuplesJoinedPerSec = 0;
     tuplesCount = 0;
   }
@@ -235,6 +247,13 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
   {
     leftStore.getStore().committed(windowId);
     rightStore.getStore().committed(windowId);
+  }
+
+  @Override
+  public void beforeCheckpoint(long windowId)
+  {
+    leftStore.getStore().beforeCheckpoint(windowId);
+    rightStore.getStore().beforeCheckpoint(windowId);
   }
 
   /**
@@ -390,6 +409,11 @@ public abstract class AbstractJoinOperator<T> extends BaseOperator implements Op
     public StoreContext(JoinStore store)
     {
       this.store = store;
+    }
+
+    public StoreContext()
+    {
+
     }
 
     public String getTimeFields()

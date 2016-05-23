@@ -80,6 +80,12 @@ public class InMemoryStore extends TimeBasedStore<TimeEvent> implements JoinStor
   }
 
   @Override
+  public void beforeCheckpoint(long windowId)
+  {
+
+  }
+
+  @Override
   public List<TimeEvent> getValidTuples(Object tuple)
   {
     return super.getValidTuples((TimeEvent)tuple);
@@ -94,7 +100,7 @@ public class InMemoryStore extends TimeBasedStore<TimeEvent> implements JoinStor
   private static final Logger logger = LoggerFactory.getLogger(InMemoryStore.class);
 
   @Override
-  public void setup(Context context)
+  public void setup(Context.OperatorContext context)
   {
     super.setup();
   }
