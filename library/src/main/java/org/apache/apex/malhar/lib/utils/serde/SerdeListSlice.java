@@ -30,7 +30,7 @@ public class SerdeListSlice<T> implements Serde<List<T>, Slice>
   {
     Slice[] slices = new Slice[objects.size()];
 
-    int size = 1;
+    int size = 4;
 
     for (int index = 0; index < objects.size(); index++) {
       Slice slice = serde.serialize(objects.get(index));

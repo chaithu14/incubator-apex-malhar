@@ -78,6 +78,10 @@ public class SpillableByteMapImpl<K, V> implements Spillable.SpillableByteMap<K,
   {
     K key = (K)o;
 
+    if (cache.getRemovedKeys().contains(key)) {
+      return null;
+    }
+
     V val = cache.get(key);
 
     if (val != null) {
@@ -90,26 +94,36 @@ public class SpillableByteMapImpl<K, V> implements Spillable.SpillableByteMap<K,
       return null;
     }
 
-    tempOffset.setValue(valSlice.offset);
+    tempOffset.setValue(valSlice.offset + identifier.length);
     return serdeValue.deserialize(valSlice, tempOffset);
   }
 
   @Override
   public V put(K k, V v)
   {
+    V value = get(k);
+
+    if (value == null) {
+      size++;
+    }
+
     cache.put(k, v);
 
-    //This violates map contract.
-    return null;
+    return value;
   }
 
   @Override
   public V remove(Object o)
   {
+    V value = get(o);
+
+    if (value != null) {
+      size--;
+    }
+
     cache.remove((K)o);
 
-    //This violates map contract
-    return null;
+    return value;
   }
 
   @Override

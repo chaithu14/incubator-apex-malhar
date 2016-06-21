@@ -178,7 +178,9 @@ public class SpillableArrayListImpl<T> implements Spillable.SpillableArrayList<T
   @Override
   public T get(int i)
   {
-    Preconditions.checkArgument(i < size);
+    if (!(i < size)) {
+      throw new IndexOutOfBoundsException();
+    }
 
     int batchIndex = i / batchSize;
     int batchOffset = i % batchSize;
@@ -190,7 +192,9 @@ public class SpillableArrayListImpl<T> implements Spillable.SpillableArrayList<T
   @Override
   public T set(int i, T t)
   {
-    Preconditions.checkArgument(i < size);
+    if (!(i < size)) {
+      throw new IndexOutOfBoundsException();
+    }
 
     int batchIndex = i / batchSize;
     int batchOffset = i % batchSize;
@@ -198,6 +202,7 @@ public class SpillableArrayListImpl<T> implements Spillable.SpillableArrayList<T
     List<T> batch = map.get(batchIndex);
     T old = batch.get(batchOffset);
     batch.set(batchOffset, t);
+    map.put(batchIndex, batch);
     return old;
   }
 

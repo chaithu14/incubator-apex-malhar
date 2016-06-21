@@ -19,7 +19,6 @@ public class WindowBoundedMapCacheTest
 
     long windowId = 0L;
 
-    cache.beginWindow(windowId);
     windowId++;
 
     cache.put("1", "a");
@@ -27,7 +26,6 @@ public class WindowBoundedMapCacheTest
 
     cache.endWindow();
 
-    cache.beginWindow(windowId);
     windowId++;
 
     Assert.assertEquals("a", cache.get("1"));
@@ -42,7 +40,6 @@ public class WindowBoundedMapCacheTest
 
     long windowId = 0L;
 
-    cache.beginWindow(windowId);
     windowId++;
 
     cache.put("1", "a");
@@ -53,7 +50,6 @@ public class WindowBoundedMapCacheTest
 
     cache.endWindow();
 
-    cache.beginWindow(windowId);
     windowId++;
 
     cache.remove("1");
@@ -66,7 +62,6 @@ public class WindowBoundedMapCacheTest
 
     cache.endWindow();
 
-    cache.beginWindow(windowId);
     windowId++;
 
     Assert.assertEquals(Sets.newHashSet(), cache.getChangedKeys());
@@ -82,7 +77,6 @@ public class WindowBoundedMapCacheTest
 
     long windowId = 0L;
 
-    cache.beginWindow(windowId);
     windowId++;
 
     cache.put("1", "a");
@@ -95,7 +89,6 @@ public class WindowBoundedMapCacheTest
 
     cache.endWindow();
 
-    cache.beginWindow(windowId);
     windowId++;
 
     Assert.assertEquals(null, cache.get("1"));

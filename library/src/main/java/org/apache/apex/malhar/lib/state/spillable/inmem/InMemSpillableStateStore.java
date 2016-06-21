@@ -89,4 +89,10 @@ public class InMemSpillableStateStore implements SpillableStateStore
   public void committed(long l)
   {
   }
+
+  @Override
+  public String toString()
+  {
+    return store.toString();
+  }
 }
