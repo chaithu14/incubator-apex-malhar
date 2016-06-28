@@ -6,7 +6,11 @@ import java.util.Set;
 
 import javax.validation.constraints.NotNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.apex.malhar.lib.state.BucketedState;
+import org.apache.apex.malhar.lib.state.managed.AbstractManagedStateImpl;
 import org.apache.apex.malhar.lib.utils.serde.Serde;
 import org.apache.apex.malhar.lib.utils.serde.SliceUtils;
 import org.apache.commons.lang3.ArrayUtils;
@@ -19,6 +23,7 @@ import com.datatorrent.netlet.util.Slice;
 
 public class SpillableByteMapImpl<K, V> implements Spillable.SpillableByteMap<K, V>, Spillable.SpillableComponent
 {
+  private static final transient Logger LOG = LoggerFactory.getLogger(SpillableByteMapImpl.class);
   @NotNull
   private SpillableStateStore store;
   @NotNull
@@ -78,6 +83,7 @@ public class SpillableByteMapImpl<K, V> implements Spillable.SpillableByteMap<K,
   {
     K key = (K)o;
 
+    LOG.info("Get: {}", key);
     if (cache.getRemovedKeys().contains(key)) {
       return null;
     }

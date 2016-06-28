@@ -44,7 +44,7 @@ public class SliceUtils
     int size = a.length + b.length;
     byte[] bytes = new byte[size];
 
-    System.arraycopy(a, a.offset, bytes, 0, a.length);
+    System.arraycopy(a.buffer, a.offset, bytes, 0, a.length);
     System.arraycopy(b, 0, bytes, a.length, b.length);
 
     return new Slice(bytes);

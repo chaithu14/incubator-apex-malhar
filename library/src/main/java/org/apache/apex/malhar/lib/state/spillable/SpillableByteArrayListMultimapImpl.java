@@ -67,7 +67,7 @@ public class SpillableByteArrayListMultimapImpl<K, V> implements Spillable.Spill
 
     if (spillableArrayList == null) {
       Slice keyPrefix = serdeKey.serialize(key);
-      Integer size = map.get(SliceUtils.concatenate(keyPrefix, SIZE_KEY_SUFFIX));
+      Integer size = map.get(SliceUtils.concatenate(keyPrefix, SIZE_KEY_SUFFIX).buffer);
 
       if (size == null) {
         return null;
