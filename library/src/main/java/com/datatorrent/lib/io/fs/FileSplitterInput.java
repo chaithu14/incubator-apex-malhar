@@ -278,7 +278,7 @@ public class FileSplitterInput extends AbstractFileSplitter implements InputOper
 
     @NotNull
     @Size(min = 1)
-    private final Set<String> files;
+    protected final Set<String> files;
 
     @Min(0)
     private long scanIntervalMillis;
@@ -301,8 +301,8 @@ public class FileSplitterInput extends AbstractFileSplitter implements InputOper
     protected transient long sleepMillis;
     protected transient Map<String, Map<String, Long>> referenceTimes;
 
-    private transient ScannedFileInfo lastScannedInfo;
-    private transient int numDiscoveredPerIteration;
+    protected transient ScannedFileInfo lastScannedInfo;
+    protected transient int numDiscoveredPerIteration;
 
     public TimeBasedDirectoryScanner()
     {
@@ -398,7 +398,7 @@ public class FileSplitterInput extends AbstractFileSplitter implements InputOper
     }
 
     //check if scanned files of last iteration are processed by operator thread
-    private boolean isIterationCompleted()
+    protected boolean isIterationCompleted()
     {
       if (lastScannedInfo == null) { // first iteration started
         return true;
