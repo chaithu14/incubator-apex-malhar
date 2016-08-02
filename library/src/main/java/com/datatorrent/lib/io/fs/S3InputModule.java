@@ -63,6 +63,8 @@ public class S3InputModule extends FSInputModule
     // Set the s3 bucket name to the block reader
     S3BlockReader reader = new S3BlockReader();
     reader.setBucketName(S3BlockReader.extractBucket(getFiles()));
+    reader.setAccessKey(S3BlockReader.extractAccessKey(getFiles()));
+    reader.setSecretKey(S3BlockReader.extractSecretKey(getFiles()));
     return reader;
   }
 }

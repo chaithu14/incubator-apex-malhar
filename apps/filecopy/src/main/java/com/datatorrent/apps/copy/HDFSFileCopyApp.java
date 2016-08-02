@@ -25,8 +25,8 @@ import com.datatorrent.api.DAG;
 import com.datatorrent.api.DAG.Locality;
 import com.datatorrent.api.StreamingApplication;
 import com.datatorrent.api.annotation.ApplicationAnnotation;
-import com.datatorrent.lib.io.fs.FSInputModule;
 import com.datatorrent.lib.io.fs.HDFSFileCopyModule;
+import com.datatorrent.lib.io.fs.S3InputModule;
 
 /**
  * Application for HDFS to HDFS file copy
@@ -40,7 +40,7 @@ public class HDFSFileCopyApp implements StreamingApplication
   public void populateDAG(DAG dag, Configuration conf)
   {
 
-    FSInputModule inputModule = dag.addModule("HDFSInputModule", new FSInputModule());
+    S3InputModule inputModule = dag.addModule("S3InputModule", new S3InputModule());
     HDFSFileCopyModule outputModule = dag.addModule("HDFSFileCopyModule", new HDFSFileCopyModule());
 
     dag.addStream("FileMetaData", inputModule.filesMetadataOutput, outputModule.filesMetadataInput);
