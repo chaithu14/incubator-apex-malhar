@@ -19,6 +19,10 @@
 package com.datatorrent.lib.io.fs;
 
 import java.io.IOException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.hadoop.fs.FSDataInputStream;
 
 import com.amazonaws.auth.BasicAWSCredentials;
@@ -41,6 +45,7 @@ import com.datatorrent.lib.io.block.ReaderContext;
 @org.apache.hadoop.classification.InterfaceStability.Evolving
 public class S3BlockReader extends FSSliceReader
 {
+  private static final Logger LOG = LoggerFactory.getLogger(S3BlockReader.class);
   private transient AmazonS3 s3Client;
   private String bucketName;
   private String accessKey;
@@ -131,6 +136,7 @@ public class S3BlockReader extends FSSliceReader
       entity.clear();
       GetObjectRequest rangeObjectRequest = new GetObjectRequest(
           bucketName, filePath);
+      LOG.info("Range of Bytes: {} -> {}", offset, blockMetadata.getLength() - 1);
       rangeObjectRequest.setRange(offset, blockMetadata.getLength() - 1);
       S3Object objectPortion = s3Client.getObject(rangeObjectRequest);
       S3ObjectInputStream wrappedStream = objectPortion.getObjectContent();
