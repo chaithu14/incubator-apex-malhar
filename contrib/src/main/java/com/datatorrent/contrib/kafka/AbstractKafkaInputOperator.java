@@ -566,7 +566,7 @@ public abstract class AbstractKafkaInputOperator<K extends KafkaConsumer> implem
         throw new UnsupportedOperationException("[ONE_TO_MANY]: The high-level consumer is not supported for ONE_TO_MANY partition strategy.");
       }
 
-      if (isInitialParitition) {
+      if (isInitialParitition || newWaitingPartition.size() != 0) {
         lastRepartitionTime = System.currentTimeMillis();
         logger.info("[ONE_TO_MANY]: Initializing partition(s)");
         int size = initialPartitionCount;
@@ -589,14 +589,7 @@ public abstract class AbstractKafkaInputOperator<K extends KafkaConsumer> implem
           logger.info("[ONE_TO_MANY]: Create operator partition for kafka partition(s): {} ", StringUtils.join(kps[i], ", "));
           newPartitions.add(createPartition(kps[i], initOffset, newManagers));
         }
-
-      }
-      else if (newWaitingPartition.size() != 0) {
-
-        logger.info("[ONE_TO_MANY]: Add operator partition for kafka partition(s): {} ", StringUtils.join(newWaitingPartition, ", "));
-        partitions.add(createPartition(Sets.newHashSet(newWaitingPartition), null, newManagers));
-        windowDataManager.partitioned(newManagers, deletedOperators);
-        return partitions;
+        newWaitingPartition.clear();
       }
       break;
 
