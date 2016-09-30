@@ -157,7 +157,8 @@ public class ManagedStateMultiValueImpl extends ManagedStateImpl implements Time
       Bucket bucket, @NotNull Slice key, GetAsyncCallback callback)
   {
     if (bucket == null) {
-      callback.completed(bucket.getBucketId(), key, null, null);
+      callback.completed(-1, key, null, null);
+      return;
     }
 
     Preconditions.checkNotNull(key, "key");
