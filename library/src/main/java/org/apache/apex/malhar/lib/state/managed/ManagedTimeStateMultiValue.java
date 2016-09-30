@@ -58,7 +58,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
   private boolean isKeyContainsMultiValue = false;
   private long timeBucket;
   @NotNull
-  private ManagedTimeStateImpl store;
+  private ManagedStateMultiValueImpl store;
 
   public ManagedTimeStateMultiValue()
   {
@@ -67,7 +67,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
     }
   }
 
-  public ManagedTimeStateMultiValue(@NotNull ManagedTimeStateImpl store, boolean isKeyContainsMultiValue)
+  public ManagedTimeStateMultiValue(@NotNull ManagedStateMultiValueImpl store, boolean isKeyContainsMultiValue)
   {
     this();
     this.store = Preconditions.checkNotNull(store);
@@ -103,7 +103,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public CompositeFuture getAsync(@Nullable K k)
   {
-    return new CompositeFuture(store.getAsync(getBucketId(k), streamCodec.toByteArray(k)));
+    return new CompositeFuture(store.getAsyncValue(getBucketId(k), streamCodec.toByteArray(k)));
   }
 
   @Override
@@ -273,7 +273,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
 
   public int getBucketId(K k)
   {
-    return k.hashCode() % store.getNumBuckets();
+    return k.hashCode() % store.getNoOfKeyBuckets();
   }
 
   public long getTimeBucket()
@@ -298,9 +298,9 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
 
   public class CompositeFuture implements Future<List>
   {
-    public Future<Slice> slice;
+    public Future<List<Slice>> slice;
 
-    public CompositeFuture(Future<Slice> slice)
+    public CompositeFuture(Future<List<Slice>> slice)
     {
       this.slice = slice;
     }
@@ -333,16 +333,18 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
     public List get() throws InterruptedException, ExecutionException
     {
       List<V> value = null;
-      Slice valueSlice = slice.get();
-      if (valueSlice == null || valueSlice.length == 0 || valueSlice.buffer == null) {
-        return null;
+      for (Slice valueSlice: slice.get()) {
+        if (valueSlice == null || valueSlice.length == 0 || valueSlice.buffer == null) {
+          continue;
+        }
+        if (isKeyContainsMultiValue) {
+          value = (List<V>)streamCodec.fromByteArray(valueSlice);
+        }  else {
+          value = new ArrayList<>();
+          value.add((V)streamCodec.fromByteArray(valueSlice));
+        }
       }
-      if (isKeyContainsMultiValue) {
-        value = (List<V>)streamCodec.fromByteArray(valueSlice);
-      }  else {
-        value = new ArrayList<>();
-        value.add((V)streamCodec.fromByteArray(valueSlice));
-      }
+      //Slice valueSlice = slice.get();
       return value;
     }
 

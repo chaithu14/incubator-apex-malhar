@@ -25,7 +25,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import org.joda.time.Duration;
-import org.apache.apex.malhar.lib.state.managed.ManagedTimeStateImpl;
+
+import org.apache.apex.malhar.lib.state.managed.ManagedStateMultiValueImpl;
 import org.apache.apex.malhar.lib.state.managed.ManagedTimeStateMultiValue;
 import org.apache.apex.malhar.lib.state.spillable.Spillable;
 import org.apache.hadoop.fs.Path;
@@ -55,8 +56,8 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
   private transient Map<JoinEvent<K,T>, Future<List>> waitingEvents = Maps.newLinkedHashMap();
   private int noOfBuckets = 1;
   private Long bucketSpanTime;
-  protected ManagedTimeStateImpl stream1Store;
-  protected ManagedTimeStateImpl stream2Store;
+  protected ManagedStateMultiValueImpl stream1Store;
+  protected ManagedStateMultiValueImpl stream2Store;
 
   /**
    * Create Managed states and stores for both the streams.
@@ -64,8 +65,8 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
   @Override
   public void createStores()
   {
-    stream1Store = new ManagedTimeStateImpl();
-    stream2Store = new ManagedTimeStateImpl();
+    stream1Store = new ManagedStateMultiValueImpl();
+    stream2Store = new ManagedStateMultiValueImpl();
     stream1Store.setNumBuckets(noOfBuckets);
     stream2Store.setNumBuckets(noOfBuckets);
     if (bucketSpanTime != null) {
