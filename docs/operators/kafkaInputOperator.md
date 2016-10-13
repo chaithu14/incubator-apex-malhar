@@ -3,7 +3,12 @@ KAFKA INPUT OPERATOR
 
 ### Introduction: About Kafka Input Operator
 
-This is an input operator that consumes data from Kafka messaging system for further processing in Apex. Kafka Input Operator is an fault-tolerant and scalable Malhar Operator.
+The Kafka input operator consumes data from the [Apache Kafka](http://kafka.apache.org) messaging system for processing in Apex. 
+The operator has the ability to automatically scale with the Kafka partitioning for high throughput. 
+It is fault-tolerant (consumer offset checkpointing) and guarantees idempotency to allow exactly-once results in the downstream pipeline.
+
+For more information about the processing guarantees see this [presentation](http://www.slideshare.net/ApacheApex/apache-apex-kafka-input-operator)
+and [blog](https://www.datatorrent.com/blog/end-to-end-exactly-once-with-apache-apex/).
 
 ### Why is it needed ?
 
@@ -11,9 +16,20 @@ Kafka is a pull-based and distributed publish subscribe messaging system, topics
 nodes. Kafka input operator is needed when you want to read data from multiple
 partitions of a Kafka topic in parallel in an Apex application.
 
-### 0.8 Version of Kafka Input Operator
+There are two separate implementations of the input operator,
+one built against Kafka 0.8 client and a newer version for the
+Kafka 0.9 consumer API that also works with MapR Streams.
+These reside in different packages and are described separately below.
 
-### AbstractKafkaInputOperator (Package: com.datatorrent.contrib.kafka)
+### Kafka Input Operator for Kafka 0.8.x
+
+Package: `com.datatorrent.contrib.kafka`
+
+Artifact: `malhar-contrib`
+
+https://mvnrepository.com/artifact/org.apache.apex/malhar-contrib
+
+### AbstractKafkaInputOperator
 
 This is the abstract implementation that serves as base class for consuming messages from Kafka messaging system. This class doesn’t have any ports.
 
@@ -92,8 +108,8 @@ functionality of High Level Consumer API.
 
 ### Pre-requisites
 
-This operator referred the Kafka Consumer API of version
-0.8.1.1. So, this operator will work with any 0.8.x and 0.7.x version of Apache Kafka.
+This operator uses the Kafka 0.8.2.1 client consumer API
+and will work with 0.8.x and 0.7.x versions of Kafka broker.
 
 #### Configuration Parameters
 
@@ -284,15 +300,22 @@ Below is the configuration for “test” Kafka topic name and
 ```
 
 
-### 0.9 Version of Kafka Input Operator
+### Kafka Input Operator for Kafka 0.9.x
 
-### AbstractKafkaInputOperator (Package: org.apache.apex.malhar.kafka)
+Package: `org.apache.apex.malhar.kafka`
 
-This version uses the new 0.9 version of consumer API and features of this version are described here. This operator is fault-tolerant, scalable, multi-cluster and multi-topic support.
+Artifact: `malhar-kafka`
+
+https://mvnrepository.com/artifact/org.apache.apex/malhar-kafka
+
+This version uses the new 0.9 version of consumer API and works with Kafka broker version 0.9 and later.
+The operator is fault-tolerant, scalable and supports input from multiple clusters and multiple topics in a single operator instance.
 
 #### Pre-requisites
 
 This operator requires version 0.9.0 or later of the Kafka Consumer API.
+
+### AbstractKafkaInputOperator
 
 #### Ports
 ----------
