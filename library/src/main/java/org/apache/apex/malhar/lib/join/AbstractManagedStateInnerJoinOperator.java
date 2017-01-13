@@ -192,6 +192,8 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
   public void endWindow()
   {
     processWaitEvents(true);
+    ((ManagedTimeStateMultiValue)stream1Data).endWindow();
+    ((ManagedTimeStateMultiValue)stream2Data).endWindow();
     stream1Store.endWindow();
     stream2Store.endWindow();
     super.endWindow();

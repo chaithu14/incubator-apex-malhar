@@ -20,6 +20,7 @@ package org.apache.apex.malhar.lib.state.managed;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ import org.apache.apex.malhar.lib.state.spillable.Spillable;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multiset;
+import com.google.common.util.concurrent.Futures;
 
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.lib.codec.KryoSerializableStreamCodec;
@@ -59,6 +61,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
   private long timeBucket;
   @NotNull
   private ManagedTimeStateImpl store;
+  private transient Map<Slice, ManagedData> cache;
 
   public ManagedTimeStateMultiValue()
   {
@@ -72,6 +75,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
     this();
     this.store = Preconditions.checkNotNull(store);
     this.isKeyContainsMultiValue = isKeyContainsMultiValue;
+    cache = new HashMap<>();
   }
 
   /**
@@ -83,7 +87,13 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
   public List<V> get(@Nullable K k)
   {
     List<V> value = null;
-    Slice valueSlice = store.getSync(getBucketId(k), streamCodec.toByteArray(k));
+    Slice valueSlice = null;
+    ManagedData managedData = cache.get(streamCodec.toByteArray(k));
+    if (managedData != null) {
+      valueSlice = managedData.getValue();
+    } else {
+      valueSlice = store.getSync(getBucketId(k), streamCodec.toByteArray(k));
+    }
     if (valueSlice == null || valueSlice.length == 0 || valueSlice.buffer == null) {
       return null;
     }
@@ -102,6 +112,10 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public CompositeFuture getAsync(@Nullable K k)
   {
+    ManagedData managedData = cache.get(streamCodec.toByteArray(k));
+    if (managedData != null) {
+      return new CompositeFuture(Futures.immediateFuture(managedData.getValue()));
+    }
     return new CompositeFuture(store.getAsync(getBucketId(k), streamCodec.toByteArray(k)));
   }
 
@@ -180,6 +194,10 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
   @Override
   public boolean put(@Nullable K k, @Nullable V v)
   {
+    long timeBucketId = store.getTimeBucketAssigner().getTimeBucketAndAdjustBoundaries(timeBucket);
+    if (timeBucketId == -1) {
+      return false;
+    }
     if (isKeyContainsMultiValue) {
       Slice keySlice = streamCodec.toByteArray(k);
       long bucketId = getBucketId(k);
@@ -191,9 +209,13 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
         listOb = (List<V>)streamCodec.fromByteArray(valueSlice);
       }
       listOb.add(v);
-      return insertInStore(bucketId, timeBucket, keySlice, streamCodec.toByteArray(listOb));
+      cache.put(keySlice, new ManagedData(bucketId, timeBucket, streamCodec.toByteArray(listOb)));
+      //return insertInStore(bucketId, timeBucket, keySlice, streamCodec.toByteArray(listOb));
+    } else {
+      cache.put(streamCodec.toByteArray(k), new ManagedData(getBucketId(k), timeBucket, streamCodec.toByteArray(v)));
     }
-    return insertInStore(getBucketId(k), timeBucket, streamCodec.toByteArray(k),streamCodec.toByteArray(v));
+    return true;
+    //return insertInStore(getBucketId(k), timeBucket, streamCodec.toByteArray(k),streamCodec.toByteArray(v));
   }
 
   /**
@@ -205,6 +227,10 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public boolean put(@Nullable K k, @Nullable V v, long timeBucket)
   {
+    long timeBucketId = store.getTimeBucketAssigner().getTimeBucketAndAdjustBoundaries(timeBucket);
+    if (timeBucketId == -1) {
+      return false;
+    }
     if (isKeyContainsMultiValue) {
       Slice keySlice = streamCodec.toByteArray(k);
       long bucketId = getBucketId(k);
@@ -216,9 +242,13 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
         listOb = (List<V>)streamCodec.fromByteArray(valueSlice);
       }
       listOb.add(v);
-      return insertInStore(bucketId, timeBucket, keySlice, streamCodec.toByteArray(listOb));
+      cache.put(keySlice, new ManagedData(bucketId, timeBucket, streamCodec.toByteArray(listOb)));
+      //return insertInStore(bucketId, timeBucket, keySlice, streamCodec.toByteArray(listOb));
+    } else {
+      cache.put(streamCodec.toByteArray(k), new ManagedData(getBucketId(k), timeBucket, streamCodec.toByteArray(v)));
     }
-    return insertInStore(getBucketId(k), timeBucket, streamCodec.toByteArray(k),streamCodec.toByteArray(v));
+    return true;
+    //return insertInStore(getBucketId(k), timeBucket, streamCodec.toByteArray(k),streamCodec.toByteArray(v));
   }
 
   /**
@@ -295,6 +325,15 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
     this.streamCodec = streamCodec;
   }
 
+  public void endWindow()
+  {
+    for (Slice key: cache.keySet()) {
+      ManagedData managedData = cache.get(key);
+      store.put(managedData.getKeyBucket(), managedData.getTimeBucket(), key, managedData.getValue());
+    }
+    cache.clear();
+  }
+
   public class CompositeFuture implements Future<List>
   {
     public Future<Slice> slice;
@@ -351,4 +390,49 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
       throw new UnsupportedOperationException();
     }
   }
+
+  public static class ManagedData
+  {
+    private int keyBucket;
+    private long timeBucket;
+    private Slice value;
+
+    public ManagedData(int keyBucket, long timeBucket, Slice value)
+    {
+      this.keyBucket = keyBucket;
+      this.timeBucket = timeBucket;
+      this.value = value;
+    }
+
+    public int getKeyBucket()
+    {
+      return keyBucket;
+    }
+
+    public void setKeyBucket(int keyBucket)
+    {
+      this.keyBucket = keyBucket;
+    }
+
+    public long getTimeBucket()
+    {
+      return timeBucket;
+    }
+
+    public void setTimeBucket(long timeBucket)
+    {
+      this.timeBucket = timeBucket;
+    }
+
+    public Slice getValue()
+    {
+      return value;
+    }
+
+    public void setValue(Slice value)
+    {
+      this.value = value;
+    }
+  }
+
 }
