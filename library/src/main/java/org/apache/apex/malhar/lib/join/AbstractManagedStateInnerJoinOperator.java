@@ -34,9 +34,8 @@ import javax.validation.constraints.NotNull;
 
 import org.joda.time.Duration;
 
-import org.apache.apex.malhar.lib.state.managed.MovingBoundaryTimeBucketAssigner;
-
 import org.apache.apex.malhar.lib.state.managed.KeyBucketExtractor;
+import org.apache.apex.malhar.lib.state.managed.MovingBoundaryTimeBucketAssigner;
 import org.apache.apex.malhar.lib.state.managed.TimeExtractor;
 import org.apache.apex.malhar.lib.state.spillable.SequentialSpillableIdentifierGenerator;
 import org.apache.apex.malhar.lib.state.spillable.Spillable;
