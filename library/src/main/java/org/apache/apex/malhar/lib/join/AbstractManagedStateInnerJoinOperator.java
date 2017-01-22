@@ -216,12 +216,15 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
     if (streamStore == null) {
       streamStore = new ManagedTimeStateSpillableStore();
       streamStore.setNumBuckets(noOfBuckets);
-      if (bucketSpanTime != null) {
-        streamStore.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketSpanTime));
-      }
-      ((MovingBoundaryTimeBucketAssigner)streamStore.getTimeBucketAssigner()).setExpireBefore(Duration.millis(getExpiryTime()));
     }
     ((FileAccessFSImpl)streamStore.getFileAccess()).setBasePath(context.getValue(DAG.APPLICATION_PATH) + Path.SEPARATOR + stateDir + Path.SEPARATOR + String.valueOf(context.getId()) + Path.SEPARATOR + streamState);
+    streamStore.setup(context);
+    if (bucketSpanTime != null) {
+      streamStore.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketSpanTime));
+    }
+    if (streamStore.getTimeBucketAssigner() instanceof MovingBoundaryTimeBucketAssigner) {
+      ((MovingBoundaryTimeBucketAssigner)streamStore.getTimeBucketAssigner()).setExpireBefore(Duration.millis(getExpiryTime()));
+    }
     stream1TimeExtractor = getTimeExtractor(true);
     stream2TimeExtractor = getTimeExtractor(false);
     super.setup(context);
@@ -768,7 +771,7 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
     @Override
     public void setup(Context.OperatorContext context)
     {
-      store.setup(context);
+      //store.setup(context);
 
       //ensure buckets created.
       for (long bucketId : bucketIds) {
