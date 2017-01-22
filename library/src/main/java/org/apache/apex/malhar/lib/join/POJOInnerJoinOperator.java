@@ -19,8 +19,11 @@
 package org.apache.apex.malhar.lib.join;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.apex.malhar.lib.state.managed.KeyBucketExtractor;
@@ -32,10 +35,13 @@ import org.apache.commons.lang3.ClassUtils;
 import com.datatorrent.api.Context;
 import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.api.DefaultOutputPort;
+import com.datatorrent.api.DefaultPartition;
 import com.datatorrent.api.Operator;
+import com.datatorrent.api.Partitioner;
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.api.annotation.InputPortFieldAnnotation;
 import com.datatorrent.api.annotation.OutputPortFieldAnnotation;
+import com.datatorrent.lib.util.KryoCloneUtils;
 import com.datatorrent.lib.util.PojoUtils;
 
 /**
@@ -47,10 +53,11 @@ import com.datatorrent.lib.util.PojoUtils;
  * @since 3.5.0
  */
 @org.apache.hadoop.classification.InterfaceStability.Evolving
-public class POJOInnerJoinOperator extends AbstractManagedStateInnerJoinOperator<Object,Object> implements Operator.ActivationListener<Context>
+public class POJOInnerJoinOperator extends AbstractManagedStateInnerJoinOperator<Object,Object> implements Operator.ActivationListener<Context>, Partitioner<POJOInnerJoinOperator>
 {
   private transient FieldObjectMap[] inputFieldObjects = (FieldObjectMap[])Array.newInstance(FieldObjectMap.class, 2);
   protected transient Class<?> outputClass;
+  private int partitionCount = 1;
 
   @OutputPortFieldAnnotation(schemaRequired = true)
   public final transient DefaultOutputPort<Object> outputPort = new DefaultOutputPort<Object>()
@@ -266,6 +273,34 @@ public class POJOInnerJoinOperator extends AbstractManagedStateInnerJoinOperator
     return new JoinStreamCodec(getRightKeyExpression());
   }
 
+  @Override
+  public Collection<Partition<POJOInnerJoinOperator>> definePartitions(Collection<Partition<POJOInnerJoinOperator>> partitions, PartitioningContext context)
+  {
+    boolean isInitialPartition = partitions.iterator().next().getStats() == null;
+    if (!isInitialPartition) {
+      // support for dynamic partitioning requires lineage tracking
+      return partitions;
+    }
+
+    final int numPartitions = DefaultPartition.getRequiredPartitionCount(context, this.partitionCount);
+    List<Partition<POJOInnerJoinOperator>> newPartitions = new ArrayList<>(numPartitions);
+
+    for (int i = 0; i < numPartitions; i++) {
+      Partition<POJOInnerJoinOperator> p = new DefaultPartition<>(KryoCloneUtils.cloneObject(this));
+      newPartitions.add(p);
+    }
+
+    DefaultPartition.assignPartitionKeys(newPartitions, input1);
+    DefaultPartition.assignPartitionKeys(newPartitions, input2);
+    return newPartitions;
+  }
+
+  @Override
+  public void partitioned(Map<Integer, Partition<POJOInnerJoinOperator>> partitions)
+  {
+
+  }
+
   private class FieldObjectMap
   {
     public Class<?> inputClass;
@@ -289,6 +324,16 @@ public class POJOInnerJoinOperator extends AbstractManagedStateInnerJoinOperator
     {
       return o.hashCode() % getNoOfBuckets();
     }
+  }
+
+  public int getPartitionCount()
+  {
+    return partitionCount;
+  }
+
+  public void setPartitionCount(int partitionCount)
+  {
+    this.partitionCount = partitionCount;
   }
 
   /**
