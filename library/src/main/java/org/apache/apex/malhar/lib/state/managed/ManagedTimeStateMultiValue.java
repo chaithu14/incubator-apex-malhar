@@ -194,7 +194,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
   @Override
   public boolean put(@Nullable K k, @Nullable V v)
   {
-    long timeBucketId = store.getTimeBucketAssigner().getTimeBucketAndAdjustBoundaries(timeBucket);
+    long timeBucketId = store.getTimeBucketAssigner().getTimeBucket(timeBucket);
     if (timeBucketId == -1) {
       return false;
     }
@@ -209,10 +209,10 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
         listOb = (List<V>)streamCodec.fromByteArray(valueSlice);
       }
       listOb.add(v);
-      cache.put(keySlice, new ManagedData(bucketId, timeBucket, streamCodec.toByteArray(listOb)));
+      cache.put(keySlice, new ManagedData((int)bucketId, timeBucket, streamCodec.toByteArray(listOb)));
       //return insertInStore(bucketId, timeBucket, keySlice, streamCodec.toByteArray(listOb));
     } else {
-      cache.put(streamCodec.toByteArray(k), new ManagedData(getBucketId(k), timeBucket, streamCodec.toByteArray(v)));
+      cache.put(streamCodec.toByteArray(k), new ManagedData((int)getBucketId(k), timeBucket, streamCodec.toByteArray(v)));
     }
     return true;
     //return insertInStore(getBucketId(k), timeBucket, streamCodec.toByteArray(k),streamCodec.toByteArray(v));
@@ -227,7 +227,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public boolean put(@Nullable K k, @Nullable V v, long timeBucket)
   {
-    long timeBucketId = store.getTimeBucketAssigner().getTimeBucketAndAdjustBoundaries(timeBucket);
+    long timeBucketId = store.getTimeBucketAssigner().getTimeBucket(timeBucket);
     if (timeBucketId == -1) {
       return false;
     }
@@ -242,10 +242,10 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
         listOb = (List<V>)streamCodec.fromByteArray(valueSlice);
       }
       listOb.add(v);
-      cache.put(keySlice, new ManagedData(bucketId, timeBucket, streamCodec.toByteArray(listOb)));
+      cache.put(keySlice, new ManagedData((int)bucketId, timeBucket, streamCodec.toByteArray(listOb)));
       //return insertInStore(bucketId, timeBucket, keySlice, streamCodec.toByteArray(listOb));
     } else {
-      cache.put(streamCodec.toByteArray(k), new ManagedData(getBucketId(k), timeBucket, streamCodec.toByteArray(v)));
+      cache.put(streamCodec.toByteArray(k), new ManagedData((int)getBucketId(k), timeBucket, streamCodec.toByteArray(v)));
     }
     return true;
     //return insertInStore(getBucketId(k), timeBucket, streamCodec.toByteArray(k),streamCodec.toByteArray(v));

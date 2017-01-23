@@ -153,6 +153,15 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
     stream1Store.getCheckpointManager().setStatePath("managed_state_" + stream2State);
     stream1Store.setup(context);
     stream2Store.setup(context);
+    assert stream1Store.getTimeBucketAssigner() == stream2Store.getTimeBucketAssigner();
+    if (bucketSpanTime != null) {
+      stream1Store.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketSpanTime));
+      stream2Store.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketSpanTime));
+    }
+    if (stream1Store.getTimeBucketAssigner() instanceof MovingBoundaryTimeBucketAssigner) {
+      ((MovingBoundaryTimeBucketAssigner)stream1Store.getTimeBucketAssigner()).setExpireBefore(Duration.millis(getExpiryTime()));
+      ((MovingBoundaryTimeBucketAssigner)stream2Store.getTimeBucketAssigner()).setExpireBefore(Duration.millis(getExpiryTime()));
+    }
   }
 
   @Override
