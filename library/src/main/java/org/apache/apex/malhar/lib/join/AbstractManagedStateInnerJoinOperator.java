@@ -55,6 +55,7 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
   public static final String stream2State = "stream2Data";
   private transient Map<JoinEvent<K,T>, Future<List>> waitingEvents = Maps.newLinkedHashMap();
   private int noOfBuckets = 1;
+  private int noOfReaders = 1;
   private Long bucketSpanTime;
   protected ManagedTimeStateImpl stream1Store;
   protected ManagedTimeStateImpl stream2Store;
@@ -69,16 +70,9 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
     stream2Store = new ManagedTimeStateImpl();
     stream1Store.setNumBuckets(noOfBuckets);
     stream2Store.setNumBuckets(noOfBuckets);
-    assert stream1Store.getTimeBucketAssigner() == stream2Store.getTimeBucketAssigner();
-    if (bucketSpanTime != null) {
-      stream1Store.getTimeBucketAssigner().setBucketSpan(Duration.millis(bucketSpanTime));
-    }
-    if (stream1Store.getTimeBucketAssigner() instanceof MovingBoundaryTimeBucketAssigner) {
-      ((MovingBoundaryTimeBucketAssigner)stream1Store.getTimeBucketAssigner()).setExpireBefore(Duration.millis(getExpiryTime()));
-    }
+    stream1Store.setNumReaders(noOfReaders);
+    stream2Store.setNumReaders(noOfReaders);
 
-    stream1Data = new ManagedTimeStateMultiValue(stream1Store, !isLeftKeyPrimary());
-    stream2Data = new ManagedTimeStateMultiValue(stream2Store, !isRightKeyPrimary());
   }
 
   /**
@@ -147,6 +141,8 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
   public void setup(Context.OperatorContext context)
   {
     super.setup(context);
+    stream1Data = new ManagedTimeStateMultiValue(stream1Store, !isLeftKeyPrimary());
+    stream2Data = new ManagedTimeStateMultiValue(stream2Store, !isRightKeyPrimary());
     ((FileAccessFSImpl)stream1Store.getFileAccess()).setBasePath(context.getValue(DAG.APPLICATION_PATH) + Path.SEPARATOR + stateDir + Path.SEPARATOR + String.valueOf(context.getId()) + Path.SEPARATOR + stream1State);
     ((FileAccessFSImpl)stream2Store.getFileAccess()).setBasePath(context.getValue(DAG.APPLICATION_PATH) + Path.SEPARATOR + stateDir + Path.SEPARATOR + String.valueOf(context.getId()) + Path.SEPARATOR + stream2State);
     stream1Store.getCheckpointManager().setStatePath("managed_state_" + stream1State);
@@ -246,6 +242,16 @@ public abstract class AbstractManagedStateInnerJoinOperator<K,T> extends Abstrac
   public Long getBucketSpanTime()
   {
     return bucketSpanTime;
+  }
+
+  public int getNoOfReaders()
+  {
+    return noOfReaders;
+  }
+
+  public void setNoOfReaders(int noOfReaders)
+  {
+    this.noOfReaders = noOfReaders;
   }
 
   /**
