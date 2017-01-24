@@ -183,4 +183,8 @@ public class MovingBoundaryTimeBucketAssigner extends TimeBucketAssigner
     this.expireBefore = expireBefore;
   }
 
+  public long getLowestPurgeableTimeBucket()
+  {
+    return lowestPurgeableTimeBucket;
+  }
 }

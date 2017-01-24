@@ -361,6 +361,10 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
      */
     private BucketedValue getValueFromTimeBucketReader(Slice key, long timeBucket)
     {
+
+      if (timeBucket <= ((MovingBoundaryTimeBucketAssigner)managedStateContext.getTimeBucketAssigner()).getLowestPurgeableTimeBucket()) {
+        return null;
+      }
       FileAccess.FileReader fileReader = readers.get(timeBucket);
       if (fileReader != null) {
         return readValue(fileReader, key, timeBucket);
@@ -386,7 +390,10 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         } else {
           return null;
         }
-      } catch (IOException e) {
+      }  catch (Exception e) {
+        if (e == null || e.getMessage() == null || e.getMessage().contains("Cannot find matching key in block")) {
+          return null;
+        }
         throw new RuntimeException("reading " + bucketId + ", " + timeBucket, e);
       }
     }

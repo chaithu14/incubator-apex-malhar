@@ -2055,8 +2055,8 @@ public class DTFile {
           klen = -1;
           currentLocation.incRecordIndex();
         }
-
-        throw new RuntimeException("Cannot find matching key in block.");
+        return false;
+        //throw new RuntimeException("Cannot find matching key in block.");
       }
     }
 
