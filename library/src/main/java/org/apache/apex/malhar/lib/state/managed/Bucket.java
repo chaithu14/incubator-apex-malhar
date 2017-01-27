@@ -542,27 +542,21 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
 
           long memoryFreed = 0;
 
-          for (BucketedValue bucketedValue : bucketData.values()) {
-            FileAccess.FileReader reader = readers.get(bucketedValue.getTimeBucket());
-            if (reader != null) {
-              //closing the file reader for the time bucket if it is in memory because the time-bucket is modified
-              //so it will be re-written by BucketsDataManager
-              try {
-                BucketsFileSystem.TimeBucketMeta tbm = cachedBucketMetas.get(bucketedValue.getTimeBucket());
-                if (tbm != null) {
-                  memoryFreed += tbm.getSizeInBytes();
+          if (cachedBucketMetas != null) {
+
+            for (BucketsFileSystem.TimeBucketMeta tbm : cachedBucketMetas.values()) {
+              FileAccess.FileReader reader = readers.remove(tbm.getTimeBucketId());
+              if (reader != null) {
+                memoryFreed += tbm.getSizeInBytes();
+                try {
+                  reader.close();
+                } catch (IOException e) {
+                  throw new RuntimeException("closing reader " + bucketId + ", " + tbm.getTimeBucketId(), e);
                 }
-                LOG.debug("closing reader {} {}", bucketId, bucketedValue.getTimeBucket());
-                reader.close();
-              } catch (IOException e) {
-                throw new RuntimeException("closing reader " + bucketId + ", " + bucketedValue.getTimeBucket(), e);
               }
-              readers.remove(bucketedValue.getTimeBucket());
-            }
-            if (readers.isEmpty()) {
-              break;
             }
           }
+
           sizeInBytes.getAndAdd(-memoryFreed);
           if (!bucketData.isEmpty()) {
             committedData.put(savedWindow, bucketData);
