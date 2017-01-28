@@ -43,6 +43,7 @@ import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
 
 import com.datatorrent.lib.fileaccess.FileAccess;
+import com.datatorrent.lib.fileaccess.FileAccessFSImpl;
 import com.datatorrent.netlet.util.Slice;
 
 /**
@@ -146,6 +147,7 @@ public class BucketsFileSystem implements ManagedStateComponent
 
     for (Map.Entry<Slice, Bucket.BucketedValue> entry : data.entrySet()) {
       long timeBucketId = entry.getValue().getTimeBucket();
+      LOG.info("writeBucketData: {} -> {} -> {} -> {}", windowId, timeBucketId, entry.getKey(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       timeBucketedKeys.put(timeBucketId, entry.getKey(), entry.getValue());
     }
 
@@ -205,6 +207,7 @@ public class BucketsFileSystem implements ManagedStateComponent
       }
       fileWriter.close();
       rename(bucketId, tmpFileName, getFileName(timeBucket));
+      LOG.info("writeBucketData: Rename:  {} -> {} -> {}", windowId, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       tbm.updateTimeBucketMeta(windowId, dataSize, firstKey);
       updateTimeBuckets(tbm);
     }
@@ -385,7 +388,7 @@ public class BucketsFileSystem implements ManagedStateComponent
 
   protected void deleteTimeBucketsLessThanEqualTo(long latestExpiredTimeBucket) throws IOException
   {
-    LOG.debug("delete files before {}", latestExpiredTimeBucket);
+    LOG.info("delete files before {}", latestExpiredTimeBucket);
 
     for (long bucketName : bucketNamesOnFS) {
       RemoteIterator<LocatedFileStatus> timeBucketsIterator = listFiles(bucketName);
@@ -401,7 +404,7 @@ public class BucketsFileSystem implements ManagedStateComponent
         long timeBucket = Long.parseLong(timeBucketStr);
 
         if (timeBucket <= latestExpiredTimeBucket) {
-          LOG.debug("deleting bucket {} time-bucket {}", timeBucket);
+          LOG.info("deleting bucket {} time-bucket {}", timeBucket);
           invalidateTimeBucket(bucketName, timeBucket);
           delete(bucketName, timeBucketStatus.getPath().getName());
         } else {

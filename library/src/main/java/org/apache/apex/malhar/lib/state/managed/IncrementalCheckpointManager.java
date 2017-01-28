@@ -215,7 +215,7 @@ public class IncrementalCheckpointManager extends FSWindowDataManager
   @Override
   public void committed(long committedWindowId) throws IOException
   {
-    LOG.debug("data manager committed {}", committedWindowId);
+    LOG.info("data manager committed {}", committedWindowId);
     for (Long currentWindow : savedWindows.keySet()) {
       if (currentWindow <= largestWindowAddedToTransferQueue) {
         continue;

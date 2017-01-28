@@ -32,6 +32,9 @@ import java.util.concurrent.TimeoutException;
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.apache.apex.malhar.lib.state.spillable.Spillable;
 
 import com.google.common.base.Preconditions;
@@ -41,6 +44,7 @@ import com.google.common.util.concurrent.Futures;
 
 import com.datatorrent.api.StreamCodec;
 import com.datatorrent.lib.codec.KryoSerializableStreamCodec;
+import com.datatorrent.lib.fileaccess.FileAccessFSImpl;
 import com.datatorrent.netlet.util.Slice;
 
 /**
@@ -56,6 +60,7 @@ import com.datatorrent.netlet.util.Slice;
 @org.apache.hadoop.classification.InterfaceStability.Evolving
 public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListMultimap<K,V>
 {
+  private static final Logger LOG = LoggerFactory.getLogger(ManagedTimeStateMultiValue.class);
   private transient StreamCodec streamCodec = null;
   private boolean isKeyContainsMultiValue = false;
   private long timeBucket;
@@ -112,6 +117,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public CompositeFuture getAsync(@Nullable K k)
   {
+    LOG.info("getAsync: {} -> {} -> {}", k, streamCodec.toByteArray(k), ((FileAccessFSImpl)store.getFileAccess()).getBasePath());
     ManagedData managedData = cache.get(streamCodec.toByteArray(k));
     if (managedData != null) {
       return new CompositeFuture(Futures.immediateFuture(managedData.getValue()));
@@ -227,6 +233,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public boolean put(@Nullable K k, @Nullable V v, long timeBucket)
   {
+    LOG.info("put: {} -> {} -> {}", k, streamCodec.toByteArray(k), ((FileAccessFSImpl)store.getFileAccess()).getBasePath());
     long timeBucketId = store.getTimeBucketAssigner().getTimeBucket(timeBucket);
     if (timeBucketId == -1) {
       return false;

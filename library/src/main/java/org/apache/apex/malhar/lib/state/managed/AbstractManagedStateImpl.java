@@ -52,6 +52,7 @@ import com.datatorrent.api.Operator;
 import com.datatorrent.api.annotation.Stateless;
 import com.datatorrent.common.util.NameableThreadFactory;
 import com.datatorrent.lib.fileaccess.FileAccess;
+import com.datatorrent.lib.fileaccess.FileAccessFSImpl;
 import com.datatorrent.lib.fileaccess.TFileImpl;
 import com.datatorrent.lib.util.comparator.SliceComparator;
 import com.datatorrent.netlet.util.Slice;
@@ -357,6 +358,7 @@ public abstract class AbstractManagedStateImpl
   @Override
   public void beforeCheckpoint(long windowId)
   {
+    LOG.info("beforeCheckpoint - 1: {} -> {}", windowId, ((FileAccessFSImpl)fileAccess).getBasePath());
     Map<Long, Map<Slice, Bucket.BucketedValue>> flashData = Maps.newHashMap();
 
     for (Bucket bucket : buckets.values()) {
@@ -377,6 +379,7 @@ public abstract class AbstractManagedStateImpl
         throw new RuntimeException(e);
       }
     }
+    LOG.info("beforeCheckpoint - 2: {} -> {}", windowId, ((FileAccessFSImpl)fileAccess).getBasePath());
   }
 
   @Override
@@ -388,6 +391,7 @@ public abstract class AbstractManagedStateImpl
   @Override
   public void committed(long windowId)
   {
+    LOG.info("committed - 1: {} -> {}", windowId, ((FileAccessFSImpl)fileAccess).getBasePath());
     synchronized (commitLock) {
       try {
         for (Bucket bucket : buckets.values()) {
@@ -398,6 +402,7 @@ public abstract class AbstractManagedStateImpl
           }
         }
         checkpointManager.committed(windowId);
+        LOG.info("committed - 2: {} -> {}", windowId, ((FileAccessFSImpl)fileAccess).getBasePath());
       } catch (IOException e) {
         throw new RuntimeException("committing " + windowId, e);
       }

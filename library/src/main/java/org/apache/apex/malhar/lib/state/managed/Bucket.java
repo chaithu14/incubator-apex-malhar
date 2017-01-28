@@ -44,6 +44,7 @@ import com.google.common.collect.Sets;
 import com.google.common.primitives.Longs;
 
 import com.datatorrent.lib.fileaccess.FileAccess;
+import com.datatorrent.lib.fileaccess.FileAccessFSImpl;
 import com.datatorrent.netlet.util.Slice;
 
 /**
@@ -266,6 +267,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
       //search the cache for key
       BucketedValue bucketedValue = flash.get(key);
       if (bucketedValue != null) {
+        LOG.info("key Found in flash: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
         return bucketedValue.getValue();
       }
 
@@ -273,6 +275,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         //traverse the checkpointed data in reverse order
         bucketedValue = checkpointedData.get(window).get(key);
         if (bucketedValue != null) {
+          LOG.info("key Found in checkpointed: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
           return bucketedValue.getValue();
         }
       }
@@ -281,12 +284,14 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         //traverse the committed data in reverse order
         bucketedValue = committedData.get(window).get(key);
         if (bucketedValue != null) {
+          LOG.info("key Found in Committed: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
           return bucketedValue.getValue();
         }
       }
 
       bucketedValue = fileCache.get(key);
       if (bucketedValue != null) {
+        LOG.info("key Found in fileCache: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
         return bucketedValue.getValue();
       }
 
@@ -311,13 +316,16 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
             return bucketedValue.value;
           }
         } else {
+          LOG.info("getFromReaders - 1: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
           //search all the time buckets
           for (BucketsFileSystem.TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas.values()) {
+            LOG.info("getFromReaders - 2: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
             if (managedStateContext.getKeyComparator().compare(key, immutableTimeBucketMeta.getFirstKey()) >= 0) {
               //keys in the time bucket files are sorted so if the first key in the file is greater than the key being
               //searched, the key will not be present in that file.
               BucketedValue bucketedValue = getValueFromTimeBucketReader(key, immutableTimeBucketMeta.getTimeBucketId());
               if (bucketedValue != null) {
+                LOG.info("getFromReaders - 3: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
                 //Only when the key is read from the latest time bucket on the file, the key/value is put in the file
                 // cache.
                 fileCache.put(key, bucketedValue);
@@ -337,6 +345,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
     {
       // This call is lightweight
       releaseMemory();
+      LOG.info("get: {} -> {} -> {} -> {}", key, timeBucket, readSource, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       key = SliceUtils.toBufferSlice(key);
       switch (readSource) {
         case MEMORY:
@@ -361,10 +370,12 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
      */
     private BucketedValue getValueFromTimeBucketReader(Slice key, long timeBucket)
     {
-
+      LOG.info("getValueFromTimeBucketReader -1: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       if (timeBucket <= ((MovingBoundaryTimeBucketAssigner)managedStateContext.getTimeBucketAssigner()).getLowestPurgeableTimeBucket()) {
         return null;
       }
+      LOG.info("getValueFromTimeBucketReader -2: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+
       FileAccess.FileReader fileReader = readers.get(timeBucket);
       if (fileReader != null) {
         return readValue(fileReader, key, timeBucket);
@@ -382,6 +393,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
 
     private BucketedValue readValue(FileAccess.FileReader fileReader, Slice key, long timeBucket)
     {
+      LOG.info("readValue: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       Slice valSlice = new Slice(null, 0, 0);
       try {
         if (fileReader.seek(key)) {
@@ -424,6 +436,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
       BucketedValue bucketedValue = flash.get(key);
       if (bucketedValue == null) {
         bucketedValue = new BucketedValue(timeBucket, value);
+        LOG.info("Put: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
         flash.put(key, bucketedValue);
         sizeInBytes.getAndAdd(key.length + value.length + Longs.BYTES);
       } else {
@@ -450,13 +463,14 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
     public long freeMemory(long windowId) throws IOException
     {
       long memoryFreed = 0;
+      LOG.info("Free Memory: {} -> {}", windowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       Iterator<Map.Entry<Long, Map<Slice, BucketedValue>>> entryIter = committedData.entrySet().iterator();
       while (entryIter.hasNext()) {
         Map.Entry<Long, Map<Slice, BucketedValue>> bucketEntry = entryIter.next();
         if (bucketEntry.getKey() > windowId) {
           break;
         }
-
+        LOG.info("Removed Window Id from committed: {} -> {} -> {}", bucketEntry.getKey(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath(), windowId);
         Map<Slice, BucketedValue> windowData = bucketEntry.getValue();
         entryIter.remove();
 
@@ -476,6 +490,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
           }
         }
       }
+      cachedBucketMetas = null;
 
       sizeInBytes.getAndAdd(-memoryFreed);
 
@@ -518,6 +533,10 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         return flash;
       } finally {
         checkpointedData.put(windowId, flash);
+        LOG.info("Checkpointed Data: {} -> {}", windowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+        for (Map.Entry<Slice, BucketedValue> e : flash.entrySet()) {
+          LOG.info("C Data: {} ", e.getKey());
+        }
         flash = Maps.newHashMap();
       }
     }
@@ -559,6 +578,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
 
           sizeInBytes.getAndAdd(-memoryFreed);
           if (!bucketData.isEmpty()) {
+            LOG.info("Committed; {} -> {}", committedWindowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
             committedData.put(savedWindow, bucketData);
           }
           stateIterator.remove();
