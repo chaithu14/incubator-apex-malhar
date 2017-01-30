@@ -138,7 +138,7 @@ public class IncrementalCheckpointManager extends FSWindowDataManager
             long bucketId = singleBucket.getKey();
             managedStateContext.getBucketsFileSystem().writeBucketData(windowId, bucketId, singleBucket.getValue());
           }
-          committed(windowId);
+          //committed(windowId);
         } catch (Throwable t) {
           throwable.set(t);
           LOG.debug("transfer window {}", windowId, t);
