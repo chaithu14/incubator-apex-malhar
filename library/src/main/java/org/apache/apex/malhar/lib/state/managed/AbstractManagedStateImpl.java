@@ -245,11 +245,6 @@ public abstract class AbstractManagedStateImpl
   public void beginWindow(long windowId)
   {
     LOG.info("AbstractManagedStateIMpL: beginWindow: {} ", windowId);
-    for (Bucket bucket : buckets.values()) {
-      if (bucket != null) {
-        ((Bucket.DefaultBucket)bucket).beginWindow(windowId);
-      }
-    }
     if (throwable.get() != null) {
       Throwables.propagate(throwable.get());
     }
@@ -358,11 +353,6 @@ public abstract class AbstractManagedStateImpl
   public void endWindow()
   {
     timeBucketAssigner.endWindow();
-    for (Bucket bucket : buckets.values()) {
-      if (bucket != null) {
-        ((Bucket.DefaultBucket)bucket).endWindow();
-      }
-    }
   }
 
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
