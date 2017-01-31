@@ -36,6 +36,11 @@ import org.slf4j.LoggerFactory;
 import org.apache.apex.malhar.lib.utils.serde.KeyValueByteStreamProvider;
 import org.apache.apex.malhar.lib.utils.serde.SliceUtils;
 import org.apache.apex.malhar.lib.utils.serde.WindowedBlockStream;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.permission.FsPermission;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -43,6 +48,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Longs;
 
+import com.datatorrent.api.DAG;
 import com.datatorrent.lib.fileaccess.FileAccess;
 import com.datatorrent.lib.fileaccess.FileAccessFSImpl;
 import com.datatorrent.netlet.util.Slice;
@@ -198,6 +204,10 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
   class DefaultBucket implements Bucket
   {
     private final long bucketId;
+    private transient FileSystem fs;
+    private transient FSDataOutputStream fsOutput;
+    private String filePath;
+    private String lineSeparator;
 
     //Key -> Ordered values
     private transient Map<Slice, BucketedValue> flash = Maps.newConcurrentMap();
@@ -248,6 +258,36 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
     public void setup(@NotNull ManagedStateContext managedStateContext)
     {
       this.managedStateContext = Preconditions.checkNotNull(managedStateContext, "managed state context");
+      String[] ar = (((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath()).split("/");
+      filePath = ((AbstractManagedStateImpl)this.managedStateContext).operatorContext.getValue(DAG.APPLICATION_PATH) + Path.SEPARATOR + "BucketWindows" + Path.SEPARATOR + ar[ar.length - 1];
+      try {
+        fs = FileSystem.newInstance(new Path(filePath).toUri(), new Configuration());
+        lineSeparator = System.getProperty("line.separator");
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    public void beginWindow(long windowId)
+    {
+      filePath = filePath + windowId;
+      Path filepath = new Path(filePath);
+      try {
+        fsOutput = fs.create(filepath, true);
+        fs.setPermission(filepath, FsPermission.createImmutable((short)0777));
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    public void endWindow()
+    {
+      try {
+        fsOutput.hflush();
+        fsOutput.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
     }
 
     @Override
@@ -325,7 +365,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
               //searched, the key will not be present in that file.
               BucketedValue bucketedValue = getValueFromTimeBucketReader(key, immutableTimeBucketMeta.getTimeBucketId());
               if (bucketedValue != null) {
-                LOG.info("getFromReaders - 3: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+                //LOG.info("getFromReaders - 3: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
                 //Only when the key is read from the latest time bucket on the file, the key/value is put in the file
                 // cache.
                 fileCache.put(key, bucketedValue);
@@ -374,7 +414,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
       if (timeBucket <= ((MovingBoundaryTimeBucketAssigner)managedStateContext.getTimeBucketAssigner()).getLowestPurgeableTimeBucket()) {
         return null;
       }
-      LOG.info("getValueFromTimeBucketReader -2: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+      //LOG.info("getValueFromTimeBucketReader -2: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
 
       FileAccess.FileReader fileReader = readers.get(timeBucket);
       if (fileReader != null) {
@@ -393,7 +433,13 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
 
     private BucketedValue readValue(FileAccess.FileReader fileReader, Slice key, long timeBucket)
     {
-      LOG.info("readValue: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+      String log = "readValue: " +  key + " -> " + timeBucket;
+      try {
+        fsOutput.write(log.getBytes());
+        fsOutput.write(lineSeparator.getBytes());
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
       Slice valSlice = new Slice(null, 0, 0);
       try {
         if (fileReader.seek(key)) {
@@ -596,6 +642,11 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
     @Override
     public void teardown()
     {
+      try {
+        fs.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
       Set<Long> failureBuckets = Sets.newHashSet();
       for (Map.Entry<Long, FileAccess.FileReader> entry : readers.entrySet()) {
         try {

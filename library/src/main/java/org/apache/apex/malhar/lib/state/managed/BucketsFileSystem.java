@@ -145,16 +145,16 @@ public class BucketsFileSystem implements ManagedStateComponent
     Table<Long, Slice, Bucket.BucketedValue> timeBucketedKeys = TreeBasedTable.create(Ordering.<Long>natural(),
         managedStateContext.getKeyComparator());
 
-    String sliceData = "";
+    //String sliceData = "";
     for (Map.Entry<Slice, Bucket.BucketedValue> entry : data.entrySet()) {
       long timeBucketId = entry.getValue().getTimeBucket();
-      sliceData += "(";
+      /*sliceData += "(";
       sliceData += timeBucketId;
       sliceData += " -> ";
       sliceData += entry.getKey();
-      sliceData += " ) ";
+      sliceData += " ) ";*/
       timeBucketedKeys.put(timeBucketId, entry.getKey(), entry.getValue());
-      LOG.info("writeBucketData: {} -> {} -> {}", windowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath(), sliceData);
+      //LOG.info("writeBucketData: {} -> {} -> {}", windowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath(), sliceData);
     }
 
     for (long timeBucket : timeBucketedKeys.rowKeySet()) {

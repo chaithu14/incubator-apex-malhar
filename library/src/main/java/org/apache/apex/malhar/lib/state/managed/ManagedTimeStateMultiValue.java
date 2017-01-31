@@ -233,7 +233,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
    */
   public boolean put(@Nullable K k, @Nullable V v, long timeBucket)
   {
-    LOG.info("put: {} -> {} -> {}", k, streamCodec.toByteArray(k), ((FileAccessFSImpl)store.getFileAccess()).getBasePath());
+    //LOG.info("put: {} -> {} -> {}", k, streamCodec.toByteArray(k), ((FileAccessFSImpl)store.getFileAccess()).getBasePath());
     long timeBucketId = store.getTimeBucketAssigner().getTimeBucket(timeBucket);
     if (timeBucketId == -1) {
       return false;
@@ -339,7 +339,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
       store.put(managedData.getKeyBucket(), managedData.getTimeBucket(), key, managedData.getValue());
     }
     cache.clear();
-    LOG.info("ManagedTimeStateMultiValue: End Window");
+    //LOG.info("ManagedTimeStateMultiValue: End Window");
   }
 
   public class CompositeFuture implements Future<List>
