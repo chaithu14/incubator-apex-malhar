@@ -244,6 +244,7 @@ public abstract class AbstractManagedStateImpl
 
   public void beginWindow(long windowId)
   {
+    LOG.info("AbstractManagedStateIMpL: beginWindow: {} ", windowId);
     if (throwable.get() != null) {
       Throwables.propagate(throwable.get());
     }

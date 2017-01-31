@@ -319,7 +319,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
           LOG.info("getFromReaders - 1: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
           //search all the time buckets
           for (BucketsFileSystem.TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas.values()) {
-            LOG.info("getFromReaders - 2: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+            //LOG.info("getFromReaders - 2: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
             if (managedStateContext.getKeyComparator().compare(key, immutableTimeBucketMeta.getFirstKey()) >= 0) {
               //keys in the time bucket files are sorted so if the first key in the file is greater than the key being
               //searched, the key will not be present in that file.
@@ -370,7 +370,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
      */
     private BucketedValue getValueFromTimeBucketReader(Slice key, long timeBucket)
     {
-      LOG.info("getValueFromTimeBucketReader -1: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+      //LOG.info("getValueFromTimeBucketReader -1: {} -> {} -> {}", key, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       if (timeBucket <= ((MovingBoundaryTimeBucketAssigner)managedStateContext.getTimeBucketAssigner()).getLowestPurgeableTimeBucket()) {
         return null;
       }
@@ -403,9 +403,9 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
           return null;
         }
       }  catch (Exception e) {
-        if (e == null || e.getMessage() == null || e.getMessage().contains("Cannot find matching key in block")) {
+        /*if (e == null || e.getMessage() == null || e.getMessage().contains("Cannot find matching key in block")) {
           return null;
-        }
+        }*/
         throw new RuntimeException("reading " + bucketId + ", " + timeBucket, e);
       }
     }
@@ -535,9 +535,9 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
       } finally {
         checkpointedData.put(windowId, flash);
         LOG.info("Checkpointed Data: {} -> {}", windowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
-        for (Map.Entry<Slice, BucketedValue> e : flash.entrySet()) {
+        /*for (Map.Entry<Slice, BucketedValue> e : flash.entrySet()) {
           LOG.info("C Data: {} ", e.getKey());
-        }
+        }*/
         flash = Maps.newHashMap();
       }
     }
@@ -555,35 +555,6 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         if (savedWindow <= committedWindowId) {
           Map<Slice, BucketedValue> bucketData = entry.getValue();
 
-          //removing any stale values from the file cache
-          for (Slice key : bucketData.keySet()) {
-            fileCache.remove(key);
-          }
-
-          long memoryFreed = 0;
-
-          for (BucketedValue bucketedValue : bucketData.values()) {
-            FileAccess.FileReader reader = readers.get(bucketedValue.getTimeBucket());
-            if (reader != null) {
-              //closing the file reader for the time bucket if it is in memory because the time-bucket is modified
-              //so it will be re-written by BucketsDataManager
-              try {
-                BucketsFileSystem.TimeBucketMeta tbm = cachedBucketMetas.get(bucketedValue.getTimeBucket());
-                if (tbm != null) {
-                  memoryFreed += tbm.getSizeInBytes();
-                }
-                LOG.debug("closing reader {} {}", bucketId, bucketedValue.getTimeBucket());
-                reader.close();
-              } catch (IOException e) {
-                throw new RuntimeException("closing reader " + bucketId + ", " + bucketedValue.getTimeBucket(), e);
-              }
-              readers.remove(bucketedValue.getTimeBucket());
-            }
-            if (readers.isEmpty()) {
-              break;
-            }
-          }
-          sizeInBytes.getAndAdd(-memoryFreed);
           if (!bucketData.isEmpty()) {
             LOG.info("Committed; {} -> {}", committedWindowId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
             committedData.put(savedWindow, bucketData);
@@ -593,6 +564,27 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
           break;
         }
       }
+      fileCache.clear();
+      long memoryFreed = 0;
+      if (cachedBucketMetas != null) {
+
+        for (BucketsFileSystem.TimeBucketMeta tbm : cachedBucketMetas.values()) {
+          FileAccess.FileReader reader = readers.remove(tbm.getTimeBucketId());
+          if (reader != null) {
+            memoryFreed += tbm.getSizeInBytes();
+            try {
+              reader.close();
+            } catch (IOException e) {
+              throw new RuntimeException(e);
+            }
+          }
+        }
+        cachedBucketMetas.clear();
+      }
+      cachedBucketMetas = null;
+
+      sizeInBytes.getAndAdd(-memoryFreed);
+
     }
 
     @Override

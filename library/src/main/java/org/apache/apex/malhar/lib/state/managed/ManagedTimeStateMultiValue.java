@@ -339,6 +339,7 @@ public class ManagedTimeStateMultiValue<K,V> implements Spillable.SpillableListM
       store.put(managedData.getKeyBucket(), managedData.getTimeBucket(), key, managedData.getValue());
     }
     cache.clear();
+    LOG.info("ManagedTimeStateMultiValue: End Window");
   }
 
   public class CompositeFuture implements Future<List>
