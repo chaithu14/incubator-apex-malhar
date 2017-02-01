@@ -21,6 +21,7 @@ package org.apache.apex.malhar.lib.state.managed;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -213,9 +214,10 @@ public class BucketsFileSystem implements ManagedStateComponent
       }
       fileWriter.close();
       rename(bucketId, tmpFileName, getFileName(timeBucket));
-      LOG.info("writeBucketData: Rename:  {} -> {} -> {}", windowId, timeBucket, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
+      LOG.info("writeBucketData: Rename - 1 :  {} -> {} -> {} -> {} ", windowId, timeBucket, firstKey, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
       tbm.updateTimeBucketMeta(windowId, dataSize, firstKey);
       updateTimeBuckets(tbm);
+      LOG.info("writeBucketData: Rename - 2:  {} -> {} -> {} -> {} -> {} ", windowId, timeBucket, timeBucketsMeta.get(bucketId, timeBucket).getFirstKey(), firstKey, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
     }
 
     updateBucketMetaFile(bucketId);
@@ -309,12 +311,14 @@ public class BucketsFileSystem implements ManagedStateComponent
       TreeMap<Long, TimeBucketMeta> immutableTimeBucketMetas = Maps.newTreeMap(Ordering.natural().<Long>reverse());
 
       if (timeBucketsMeta.containsRow(bucketId)) {
+        LOG.info("getAllTimeBuckets - 1: {} -> {}", bucketId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
         for (Map.Entry<Long, MutableTimeBucketMeta> entry : timeBucketsMeta.row(bucketId).entrySet()) {
           immutableTimeBucketMetas.put(entry.getKey(), entry.getValue().getImmutableTimeBucketMeta());
         }
         return immutableTimeBucketMetas;
       }
       if (exists(bucketId, META_FILE_NAME)) {
+        LOG.info("getAllTimeBuckets - 2: {} -> {}", bucketId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
         try (DataInputStream dis = getInputStream(bucketId, META_FILE_NAME)) {
           //Load meta info of all the time buckets of the bucket identified by bucket id
           loadBucketMetaFile(bucketId, dis);
@@ -378,6 +382,7 @@ public class BucketsFileSystem implements ManagedStateComponent
       try (DataOutputStream dos = getOutputStream(bucketId, tmpFileName)) {
         dos.writeInt(META_FILE_VERSION);
         dos.writeInt(timeBuckets.size());
+        Map<Long, Slice> bucketMetas = new HashMap<>();
         for (Map.Entry<Long, MutableTimeBucketMeta> entry : timeBuckets.entrySet()) {
           MutableTimeBucketMeta tbm = entry.getValue();
           dos.writeLong(tbm.getTimeBucketId());
@@ -385,8 +390,12 @@ public class BucketsFileSystem implements ManagedStateComponent
           dos.writeLong(tbm.getLastTransferredWindowId());
           dos.writeInt(tbm.getFirstKey().length);
           dos.write(tbm.getFirstKey().toByteArray());
+          bucketMetas.put(tbm.getTimeBucketId(), tbm.getFirstKey());
         }
-
+        dos.flush();
+        dos.close();
+        LOG.info("updateBucketMetaFile : {} -> {} -> {}", bucketId, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath(), bucketMetas.toString());
+        bucketMetas.clear();
       }
       rename(bucketId, tmpFileName, META_FILE_NAME);
     }
