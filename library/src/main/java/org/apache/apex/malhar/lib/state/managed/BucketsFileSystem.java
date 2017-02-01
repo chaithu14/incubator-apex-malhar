@@ -23,7 +23,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -159,7 +158,7 @@ public class BucketsFileSystem implements ManagedStateComponent
     }
 
     for (long timeBucket : timeBucketedKeys.rowKeySet()) {
-      BucketsFileSystem.MutableTimeBucketMeta tbm = getMutableTimeBucketMeta(bucketId, timeBucket);
+      MutableTimeBucketMeta tbm = getMutableTimeBucketMeta(bucketId, timeBucket);
       if (tbm == null) {
         tbm = new MutableTimeBucketMeta(bucketId, timeBucket);
       }
@@ -446,137 +445,6 @@ public class BucketsFileSystem implements ManagedStateComponent
   {
   }
 
-  /**
-   * This serves the readers - {@link Bucket.DefaultBucket}.
-   * It is immutable and accessible outside the package unlike {@link MutableTimeBucketMeta}.
-   */
-  public static class TimeBucketMeta implements Comparable<TimeBucketMeta>
-  {
-    private final long bucketId;
-    private final long timeBucketId;
-    private long lastTransferredWindowId = -1;
-    private long sizeInBytes;
-    private Slice firstKey;
-
-    private TimeBucketMeta()
-    {
-      //for kryo
-      bucketId = -1;
-      timeBucketId = -1;
-    }
-
-    private TimeBucketMeta(long bucketId, long timeBucketId)
-    {
-      this.bucketId = bucketId;
-      this.timeBucketId = timeBucketId;
-    }
-
-    public long getLastTransferredWindowId()
-    {
-      return lastTransferredWindowId;
-    }
-
-    public long getSizeInBytes()
-    {
-      return this.sizeInBytes;
-    }
-
-    public long getBucketId()
-    {
-      return bucketId;
-    }
-
-    public long getTimeBucketId()
-    {
-      return timeBucketId;
-    }
-
-    public Slice getFirstKey()
-    {
-      return firstKey;
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-      if (this == o) {
-        return true;
-      }
-      if (!(o instanceof TimeBucketMeta)) {
-        return false;
-      }
-
-      TimeBucketMeta that = (TimeBucketMeta)o;
-
-      return bucketId == that.bucketId && timeBucketId == that.timeBucketId;
-    }
-
-    @Override
-    public int hashCode()
-    {
-      return Objects.hash(bucketId, timeBucketId);
-    }
-
-    @Override
-    public int compareTo(@NotNull TimeBucketMeta o)
-    {
-      if (bucketId < o.bucketId) {
-        return -1;
-      }
-      if (bucketId > o.bucketId) {
-        return 1;
-      }
-      if (timeBucketId < o.timeBucketId) {
-        return -1;
-      }
-      if (timeBucketId > o.timeBucketId) {
-        return 1;
-      }
-      return 0;
-    }
-  }
-
-  /**
-   * Represents time bucket meta information which can be changed.
-   * The updates to an instance and read/creation of {@link #immutableTimeBucketMeta} belonging to it are synchronized
-   * as different threads are updating and reading from it.<br/>
-   *
-   * The instance is updated when data from window files are transferred to bucket files and
-   * {@link Bucket.DefaultBucket} reads the immutable time bucket meta.
-   */
-  static class MutableTimeBucketMeta extends TimeBucketMeta
-  {
-    private transient TimeBucketMeta immutableTimeBucketMeta;
-
-    private volatile boolean changed;
-
-    public MutableTimeBucketMeta(long bucketId, long timeBucketId)
-    {
-      super(bucketId, timeBucketId);
-    }
-
-    synchronized void updateTimeBucketMeta(long lastTransferredWindow, long bytes, @NotNull Slice firstKey)
-    {
-      changed = true;
-      super.lastTransferredWindowId = lastTransferredWindow;
-      super.sizeInBytes = bytes;
-      super.firstKey = Preconditions.checkNotNull(firstKey, "first key");
-    }
-
-    synchronized TimeBucketMeta getImmutableTimeBucketMeta()
-    {
-      if (immutableTimeBucketMeta == null || changed) {
-
-        immutableTimeBucketMeta = new TimeBucketMeta(getBucketId(), getTimeBucketId());
-        immutableTimeBucketMeta.lastTransferredWindowId = getLastTransferredWindowId();
-        immutableTimeBucketMeta.sizeInBytes = getSizeInBytes();
-        immutableTimeBucketMeta.firstKey = getFirstKey();
-        changed = false;
-      }
-      return immutableTimeBucketMeta;
-    }
-
-  }
 
   protected static String getFileName(long timeBucketId)
   {

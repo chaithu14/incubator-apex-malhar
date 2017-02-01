@@ -226,7 +226,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
 
     private final transient Slice dummyGetKey = new Slice(null, 0, 0);
 
-    private transient TreeMap<Long, BucketsFileSystem.TimeBucketMeta> cachedBucketMetas;
+    private transient TreeMap<Long, TimeBucketMeta> cachedBucketMetas;
 
     /**
      * By default, separate keys and values into two different streams.
@@ -308,7 +308,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         Map<Long, Slice> bucketMetas = new HashMap<>();
         if (cachedBucketMetas == null) {
           cachedBucketMetas = managedStateContext.getBucketsFileSystem().getAllTimeBuckets(bucketId);
-          for (BucketsFileSystem.TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas.values()) {
+          for (TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas.values()) {
             bucketMetas.put(immutableTimeBucketMeta.getTimeBucketId(), immutableTimeBucketMeta.getFirstKey());
           }
           LOG.info("getFromReaders - 2: {} -> {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath(), bucketMetas.toString());
@@ -328,7 +328,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
         } else {
           //LOG.info("getFromReaders - 1: {} -> {}", key, ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
           //search all the time buckets
-          for (BucketsFileSystem.TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas.values()) {
+          for (TimeBucketMeta immutableTimeBucketMeta : cachedBucketMetas.values()) {
             bucketMetas.put(immutableTimeBucketMeta.getTimeBucketId(), immutableTimeBucketMeta.getFirstKey());
             //LOG.info("getFromReaders - 2: {} -> {} -> {} -> {}", key, immutableTimeBucketMeta.getFirstKey(), immutableTimeBucketMeta.getTimeBucketId(), ((FileAccessFSImpl)managedStateContext.getFileAccess()).getBasePath());
             if (managedStateContext.getKeyComparator().compare(key, immutableTimeBucketMeta.getFirstKey()) >= 0) {
@@ -430,7 +430,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
 
     private boolean loadFileReader(long timeBucketId) throws IOException
     {
-      BucketsFileSystem.TimeBucketMeta tbm = managedStateContext.getBucketsFileSystem()
+      TimeBucketMeta tbm = managedStateContext.getBucketsFileSystem()
           .getTimeBucketMeta(bucketId, timeBucketId);
 
       if (tbm != null) {
@@ -500,7 +500,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
       fileCache.clear();
       if (cachedBucketMetas != null) {
 
-        for (BucketsFileSystem.TimeBucketMeta tbm : cachedBucketMetas.values()) {
+        for (TimeBucketMeta tbm : cachedBucketMetas.values()) {
           FileAccess.FileReader reader = readers.remove(tbm.getTimeBucketId());
           if (reader != null) {
             memoryFreed += tbm.getSizeInBytes();
@@ -586,7 +586,7 @@ public interface Bucket extends ManagedStateComponent, KeyValueByteStreamProvide
       long memoryFreed = 0;
       if (cachedBucketMetas != null) {
 
-        for (BucketsFileSystem.TimeBucketMeta tbm : cachedBucketMetas.values()) {
+        for (TimeBucketMeta tbm : cachedBucketMetas.values()) {
           FileAccess.FileReader reader = readers.remove(tbm.getTimeBucketId());
           if (reader != null) {
             memoryFreed += tbm.getSizeInBytes();

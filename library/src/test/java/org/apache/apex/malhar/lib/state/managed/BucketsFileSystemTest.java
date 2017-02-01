@@ -97,13 +97,13 @@ public class BucketsFileSystemTest
   public void testUpdateBucketMetaDataFile() throws IOException
   {
     testMeta.bucketsFileSystem.setup(testMeta.managedStateContext);
-    BucketsFileSystem.MutableTimeBucketMeta mutableTbm = new BucketsFileSystem.MutableTimeBucketMeta(1, 1);
+    MutableTimeBucketMeta mutableTbm = new MutableTimeBucketMeta(1, 1);
     mutableTbm.updateTimeBucketMeta(10, 100, new Slice("1".getBytes()));
 
     testMeta.bucketsFileSystem.updateTimeBuckets(mutableTbm);
     testMeta.bucketsFileSystem.updateBucketMetaFile(1);
 
-    BucketsFileSystem.TimeBucketMeta immutableTbm = testMeta.bucketsFileSystem.getTimeBucketMeta(1, 1);
+    TimeBucketMeta immutableTbm = testMeta.bucketsFileSystem.getTimeBucketMeta(1, 1);
     Assert.assertNotNull(immutableTbm);
     Assert.assertEquals("last transferred window", 10, immutableTbm.getLastTransferredWindowId());
     Assert.assertEquals("size in bytes", 100, immutableTbm.getSizeInBytes());
@@ -115,10 +115,10 @@ public class BucketsFileSystemTest
   public void testGetTimeBucketMeta() throws IOException
   {
     testMeta.bucketsFileSystem.setup(testMeta.managedStateContext);
-    BucketsFileSystem.TimeBucketMeta bucketMeta = testMeta.bucketsFileSystem.getTimeBucketMeta(1, 1);
+    TimeBucketMeta bucketMeta = testMeta.bucketsFileSystem.getTimeBucketMeta(1, 1);
     Assert.assertNull("bucket meta", bucketMeta);
 
-    BucketsFileSystem.MutableTimeBucketMeta mutableTimeBucketMeta = new BucketsFileSystem.MutableTimeBucketMeta(1, 1);
+    MutableTimeBucketMeta mutableTimeBucketMeta = new MutableTimeBucketMeta(1, 1);
     testMeta.bucketsFileSystem.updateTimeBuckets(mutableTimeBucketMeta);
     bucketMeta = testMeta.bucketsFileSystem.getTimeBucketMeta(1, 1);
     Assert.assertNotNull("bucket meta not null", bucketMeta);
@@ -129,22 +129,22 @@ public class BucketsFileSystemTest
   public void testGetAllTimeBucketMeta() throws IOException
   {
     testMeta.bucketsFileSystem.setup(testMeta.managedStateContext);
-    BucketsFileSystem.MutableTimeBucketMeta tbm1 = new BucketsFileSystem.MutableTimeBucketMeta(1, 1);
+    MutableTimeBucketMeta tbm1 = new MutableTimeBucketMeta(1, 1);
     tbm1.updateTimeBucketMeta(10, 100, new Slice("1".getBytes()));
     testMeta.bucketsFileSystem.updateTimeBuckets(tbm1);
 
-    BucketsFileSystem.MutableTimeBucketMeta tbm2 = new BucketsFileSystem.MutableTimeBucketMeta(1, 2);
+    MutableTimeBucketMeta tbm2 = new MutableTimeBucketMeta(1, 2);
     tbm2.updateTimeBucketMeta(10, 100, new Slice("2".getBytes()));
     testMeta.bucketsFileSystem.updateTimeBuckets(tbm2);
 
     testMeta.bucketsFileSystem.updateBucketMetaFile(1);
-    TreeMap<Long, BucketsFileSystem.TimeBucketMeta> timeBucketMetas =
+    TreeMap<Long, TimeBucketMeta> timeBucketMetas =
         testMeta.bucketsFileSystem.getAllTimeBuckets(1);
 
-    Iterator<Map.Entry<Long, BucketsFileSystem.TimeBucketMeta>> iterator = timeBucketMetas.entrySet().iterator();
+    Iterator<Map.Entry<Long, TimeBucketMeta>> iterator = timeBucketMetas.entrySet().iterator();
     int i = 2;
     while (iterator.hasNext()) {
-      BucketsFileSystem.TimeBucketMeta tbm = iterator.next().getValue();
+      TimeBucketMeta tbm = iterator.next().getValue();
       Assert.assertEquals("time bucket " + i, i, tbm.getTimeBucketId());
       i--;
     }
@@ -157,10 +157,10 @@ public class BucketsFileSystemTest
     testMeta.bucketsFileSystem.setup(testMeta.managedStateContext);
     testGetAllTimeBucketMeta();
     testMeta.bucketsFileSystem.invalidateTimeBucket(1, 1);
-    BucketsFileSystem.TimeBucketMeta immutableTbm = testMeta.bucketsFileSystem.getTimeBucketMeta(1,1);
+    TimeBucketMeta immutableTbm = testMeta.bucketsFileSystem.getTimeBucketMeta(1,1);
     Assert.assertNull("deleted tbm", immutableTbm);
 
-    TreeMap<Long, BucketsFileSystem.TimeBucketMeta> timeBucketMetas =
+    TreeMap<Long, TimeBucketMeta> timeBucketMetas =
         testMeta.bucketsFileSystem.getAllTimeBuckets(1);
 
     Assert.assertEquals("only 1 tbm", 1, timeBucketMetas.size());
