@@ -20,19 +20,25 @@ package org.apache.apex.malhar.kafka;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.apex.malhar.lib.wal.FSWindowDataManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.zookeeper.server.NIOServerCnxnFactory;
+import org.apache.zookeeper.server.ServerCnxnFactory;
+import org.apache.zookeeper.server.ZooKeeperServer;
 
 import com.datatorrent.api.Attribute;
 import com.datatorrent.api.Context;
@@ -42,6 +48,9 @@ import com.datatorrent.api.DefaultInputPort;
 import com.datatorrent.api.LocalMode;
 import com.datatorrent.api.Operator;
 import com.datatorrent.common.util.BaseOperator;
+
+import kafka.server.KafkaConfig;
+import kafka.server.KafkaServerStartable;
 
 import static com.datatorrent.lib.helper.OperatorContextTestHelper.mockOperatorContext;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG;
@@ -423,6 +432,125 @@ public class KafkaOutputOperatorTest extends KafkaOperatorTestBase
     public String toString()
     {
       return name + age.toString();
+    }
+  }
+
+  public static void startZookeeper(final int clusterId)
+  {
+    try {
+      logger.warn("start Zookeeper - 1");
+      int numConnections = 100;
+      int tickTime = 2000;
+      File dir = new File(baseDir, zkdir[clusterId]);
+      logger.info("start Zookeeper - 2: {}", dir.getPath());
+      zkServer[clusterId] = new TestZookeeperServer(dir, dir, tickTime);
+      logger.warn("start Zookeeper - 3: {} -> {}", clusterId, dir.getPath());
+      zkFactory[clusterId] = new NIOServerCnxnFactory();
+      logger.warn("start Zookeeper - 4: {} -> {}", clusterId, dir.getPath());
+      zkFactory[clusterId].configure(new InetSocketAddress(TEST_ZOOKEEPER_PORT[clusterId]), numConnections);
+      logger.warn("start Zookeeper - 5: {} -> {}", clusterId, dir.getPath());
+      zkFactory[clusterId].startup(zkServer[clusterId]); // start the zookeeper server.
+      logger.warn("start Zookeeper - 6: {} -> {}", clusterId, dir.getPath());
+      Thread.sleep(2000);
+      //kserver.startup();
+    } catch (Exception ex) {
+      logger.error(ex.getLocalizedMessage());
+    }
+  }
+
+  public static void startKafkaServer(int clusterid, int brokerid)
+  {
+    Properties props = new Properties();
+    props.setProperty("broker.id", "" + clusterid * 10 + brokerid);
+    props.setProperty("log.dirs", new File(baseDir, kafkadir[clusterid][brokerid]).toString());
+    props.setProperty("zookeeper.connect", "localhost:" + TEST_ZOOKEEPER_PORT[clusterid]);
+    props.setProperty("port", "" + TEST_KAFKA_BROKER_PORT[clusterid][brokerid]);
+    props.setProperty("default.replication.factor", "1");
+    // set this to 50000 to boost the performance so most test data are in memory before flush to disk
+    props.setProperty("log.flush.interval.messages", "50000");
+
+    logger.warn("startKafkaServer: clusterid {} : {}", clusterid, brokerid);
+    broker[clusterid][brokerid] = new KafkaServerStartable(new KafkaConfig(props));
+    logger.warn("startKafkaServer: clusterid {} , brokerid: {}", clusterid, brokerid);
+    broker[clusterid][brokerid].startup();
+    logger.warn("startKafkaServer.startup(): clusterid {} , brokerid: {}", clusterid, brokerid);
+  }
+
+  public static void startKafkaServer()
+  {
+    FileUtils.deleteQuietly(new File(baseDir, kafkaBaseDir));
+    logger.warn("start kafka server - 1: {} -> {}", baseDir, kafkaBaseDir);
+    //boolean[][] startable = new boolean[][] { new boolean[] { true, hasMultiPartition },
+    //  new boolean[] { hasMultiCluster, hasMultiCluster && hasMultiPartition } };
+    startKafkaServer(0, 0);
+    logger.warn("start kafka server - 2: {} -> {}", baseDir, kafkaBaseDir);
+    startKafkaServer(0, 1);
+    logger.warn("start kafka server - 3: {} -> {}", baseDir, kafkaBaseDir);
+    startKafkaServer(1, 0);
+    startKafkaServer(1, 1);
+
+    // startup is asynch operation. wait 2 sec for server to startup
+
+  }
+
+  public static void stopZookeeper()
+  {
+    for (ZooKeeperServer zs : zkServer) {
+      if (zs != null) {
+        zs.shutdown();
+      }
+    }
+
+    for (ServerCnxnFactory zkf : zkFactory) {
+      if (zkf != null) {
+        zkf.closeAll();
+        zkf.shutdown();
+      }
+    }
+    zkServer = new ZooKeeperServer[2];
+    zkFactory = new ServerCnxnFactory[2];
+  }
+
+  public static void stopKafkaServer()
+  {
+    for (int i = 0; i < broker.length; i++) {
+      for (int j = 0; j < broker[i].length; j++) {
+        if (broker[i][j] != null) {
+          broker[i][j].shutdown();
+          broker[i][j].awaitShutdown();
+          broker[i][j] = null;
+        }
+      }
+    }
+  }
+
+  public static void startZookeeper()
+  {
+    FileUtils.deleteQuietly(new File(baseDir, zkBaseDir));
+    startZookeeper(0);
+    startZookeeper(1);
+  }
+
+  @BeforeClass
+  public static void beforeTest()
+  {
+    try {
+      logger.warn("--------- beforeTest--------");
+      startZookeeper();
+      startKafkaServer();
+    } catch (java.nio.channels.CancelledKeyException ex) {
+      logger.debug("LSHIL {}", ex.getLocalizedMessage());
+    }
+  }
+
+  @AfterClass
+  public static void afterTest()
+  {
+    try {
+      stopKafkaServer();
+      stopZookeeper();
+    } catch (Exception ex) {
+      logger.debug("LSHIL {}", ex.getLocalizedMessage());
     }
   }
 }
