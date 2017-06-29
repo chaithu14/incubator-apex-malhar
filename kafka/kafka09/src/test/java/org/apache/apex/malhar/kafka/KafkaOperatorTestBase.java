@@ -103,13 +103,12 @@ public class KafkaOperatorTestBase
   public static void startZookeeper(final int clusterId)
   {
     try {
-
       int numConnections = 100;
       int tickTime = 2000;
       File dir = new File(baseDir, zkdir[clusterId]);
 
-      zkServer[clusterId] = new TestZookeeperServer(dir, dir, tickTime);
-      zkFactory[clusterId] = new NIOServerCnxnFactory();
+      zkServer[clusterId] = new ZooKeeperServer(dir, dir, tickTime);
+      zkFactory[clusterId] = NIOServerCnxnFactory.createFactory();
       zkFactory[clusterId].configure(new InetSocketAddress(TEST_ZOOKEEPER_PORT[clusterId]), numConnections);
 
       zkFactory[clusterId].startup(zkServer[clusterId]); // start the zookeeper server.
@@ -156,7 +155,6 @@ public class KafkaOperatorTestBase
 
   public static void startKafkaServer()
   {
-
     FileUtils.deleteQuietly(new File(baseDir, kafkaBaseDir));
     //boolean[][] startable = new boolean[][] { new boolean[] { true, hasMultiPartition },
     //  new boolean[] { hasMultiCluster, hasMultiCluster && hasMultiPartition } };
@@ -228,6 +226,7 @@ public class KafkaOperatorTestBase
     try {
       stopKafkaServer();
       stopZookeeper();
+      Thread.sleep(000);
     } catch (Exception ex) {
       logger.debug("LSHIL {}", ex.getLocalizedMessage());
     }
