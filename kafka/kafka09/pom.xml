@@ -68,13 +68,13 @@
       <artifactId>malhar-kafka-common</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
+    <!--dependency>
       <groupId>${project.groupId}</groupId>
       <artifactId>malhar-kafka-common</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
-    </dependency>
+    </dependency!-->
     <dependency>
       <groupId>org.apache.kafka</groupId>
       <artifactId>kafka_2.11</artifactId>
