@@ -18,9 +18,10 @@
  */
 package org.apache.apex.malhar.kafka;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
 import com.datatorrent.api.DAG;
 import com.datatorrent.api.DefaultOutputPort;
 
@@ -38,6 +39,12 @@ public class KafkaInputOperatorTest extends AbstractKafkaInputOperatorTest
     super(hasMultiCluster, hasMultiPartition, partition);
   }
 
+  @Override
+  public AbstractKafkaTestProducer createProducer(String topic, boolean isMultiPartition, boolean isMultiCluster)
+  {
+    return new KafkaTestProducer(topic, isMultiPartition, isMultiCluster);
+  }
+
   KafkaSinglePortInputOperator node;
 
   @Override
@@ -51,5 +58,18 @@ public class KafkaInputOperatorTest extends AbstractKafkaInputOperatorTest
   public DefaultOutputPort getOutputPortOfKafka()
   {
     return node.outputPort;
+  }
+
+  @BeforeClass
+  public static void beforeClass()
+  {
+    embededKafka = new KafkaOperatorTestBase();
+    embededKafka.start();
+  }
+
+  @AfterClass
+  public static void afterClass()
+  {
+    embededKafka.stop();
   }
 }

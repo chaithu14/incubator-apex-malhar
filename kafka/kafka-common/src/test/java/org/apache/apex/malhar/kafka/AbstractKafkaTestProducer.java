@@ -24,7 +24,6 @@ import java.util.Random;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -36,12 +35,12 @@ import com.google.common.collect.Lists;
 /**
  * A kafka producer for testing
  */
-public class KafkaTestProducer implements Runnable
+public abstract class AbstractKafkaTestProducer implements Runnable
 {
   //  private static final Logger logger = LoggerFactory.getLogger(KafkaTestProducer.class);
-  private final Producer<String, String> producer;
-  private final Producer<String, String> producer1;
-  private final String topic;
+  public Producer<String, String> producer;
+  public Producer<String, String> producer1;
+  private String topic;
   private int sendCount = 20;
   // to generate a random int as a key for partition
   private final Random rand = new Random();
@@ -67,14 +66,14 @@ public class KafkaTestProducer implements Runnable
     this.messages = messages;
   }
 
-  private Properties createProducerConfig(int cid)
+  public Properties createProducerConfig(int cid)
   {
     Properties props = new Properties();
     props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
     props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
     props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, KafkaTestPartitioner.class.getName());
-    String brokerList = "localhost:" + KafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[cid][0];
-    brokerList += hasPartition ? (",localhost:" + KafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[cid][1]) : "";
+    String brokerList = "localhost:" + AbstractKafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[cid];
+    brokerList += hasPartition ? (",localhost:" + AbstractKafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[cid]) : "";
     props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList);
     props.setProperty(ProducerConfig.METADATA_MAX_AGE_CONFIG, "20000");
     props.setProperty(ProducerConfig.ACKS_CONFIG, getAckType());
@@ -84,27 +83,24 @@ public class KafkaTestProducer implements Runnable
     return props;
   }
 
-  public KafkaTestProducer(String topic)
+  public AbstractKafkaTestProducer(String topic)
   {
     this(topic, false);
   }
 
-  public KafkaTestProducer(String topic, boolean hasPartition, boolean hasMultiCluster)
+  public abstract void createProducer();
+
+  public AbstractKafkaTestProducer(String topic, boolean hasPartition, boolean hasMultiCluster)
   {
     // Use random partitioner. Don't need the key type. Just set it to Integer.
     // The message is of type String.
     this.topic = topic;
     this.hasPartition = hasPartition;
     this.hasMultiCluster = hasMultiCluster;
-    producer = new KafkaProducer<>(createProducerConfig(0));
-    if (hasMultiCluster) {
-      producer1 = new KafkaProducer<>(createProducerConfig(1));
-    } else {
-      producer1 = null;
-    }
+    createProducer();
   }
 
-  public KafkaTestProducer(String topic, boolean hasPartition)
+  public AbstractKafkaTestProducer(String topic, boolean hasPartition)
   {
     this(topic, hasPartition, false);
   }
@@ -127,9 +123,9 @@ public class KafkaTestProducer implements Runnable
     }
     // produce the end tuple to let the test input operator know it's done produce messages
     for (int i = 0; i < (hasPartition ? 2 : 1); ++i) {
-      sendTasks.add(producer.send(new ProducerRecord<>(topic, "" + i, KafkaOperatorTestBase.END_TUPLE)));
+      sendTasks.add(producer.send(new ProducerRecord<>(topic, "" + i, AbstractKafkaOperatorTestBase.END_TUPLE)));
       if (hasMultiCluster) {
-        sendTasks.add(producer1.send(new ProducerRecord<>(topic, "" + i, KafkaOperatorTestBase.END_TUPLE)));
+        sendTasks.add(producer1.send(new ProducerRecord<>(topic, "" + i, AbstractKafkaOperatorTestBase.END_TUPLE)));
       }
     }
   }
@@ -177,5 +173,15 @@ public class KafkaTestProducer implements Runnable
   public void setAckType(String ackType)
   {
     this.ackType = ackType;
+  }
+
+  public boolean isHasMultiCluster()
+  {
+    return hasMultiCluster;
+  }
+
+  public void setHasMultiCluster(boolean hasMultiCluster)
+  {
+    this.hasMultiCluster = hasMultiCluster;
   }
 } // End of KafkaTestProducer

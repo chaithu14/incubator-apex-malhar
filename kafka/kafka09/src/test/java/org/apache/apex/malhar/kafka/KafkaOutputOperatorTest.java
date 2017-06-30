@@ -26,8 +26,10 @@ import java.util.List;
 import java.util.Properties;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.apache.apex.malhar.lib.wal.FSWindowDataManager;
@@ -49,23 +51,37 @@ import static org.apache.kafka.clients.consumer.ConsumerConfig.GROUP_ID_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG;
 import static org.apache.kafka.clients.consumer.ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG;
 
-public class KafkaOutputOperatorTest extends KafkaOperatorTestBase
+public class KafkaOutputOperatorTest
 {
   String testName;
+  private static int testCounter = 0;
+  private static KafkaOperatorTestBase embededKafka = new KafkaOperatorTestBase();
   private static List<Person> tupleCollection = new LinkedList<>();
   private final String VALUE_DESERIALIZER = "org.apache.apex.malhar.kafka.KafkaHelper";
   private final String VALUE_SERIALIZER = "org.apache.apex.malhar.kafka.KafkaHelper";
 
-  public static String APPLICATION_PATH = baseDir + File.separator + "MyKafkaApp" + File.separator;
+  public static String APPLICATION_PATH = embededKafka.baseDir + File.separator + "MyKafkaApp" + File.separator;
+
+  @BeforeClass
+  public static void beforeClass()
+  {
+    embededKafka.start();
+  }
+
+  @AfterClass
+  public static void afterClass()
+  {
+    embededKafka.stop();
+  }
 
   @Before
   public void before()
   {
     FileUtils.deleteQuietly(new File(APPLICATION_PATH));
-    testName = TEST_TOPIC + testCounter++;
-    createTopic(0, testName);
-    if (hasMultiCluster) {
-      createTopic(1, testName);
+    testName = embededKafka.TEST_TOPIC + testCounter++;
+    embededKafka.createTopic(0, testName);
+    if (embededKafka.hasMultiCluster) {
+      embededKafka.createTopic(1, testName);
     }
   }
 
@@ -280,10 +296,10 @@ public class KafkaOutputOperatorTest extends KafkaOperatorTestBase
   private String getClusterConfig()
   {
     String l = "localhost:";
-    return l + TEST_KAFKA_BROKER_PORT[0][0] +
-      (hasMultiPartition ? "," + l + TEST_KAFKA_BROKER_PORT[0][1] : "") +
-      (hasMultiCluster ? ";" + l + TEST_KAFKA_BROKER_PORT[1][0] : "") +
-      (hasMultiCluster && hasMultiPartition ? "," + l + TEST_KAFKA_BROKER_PORT[1][1] : "");
+    return l + embededKafka.TEST_KAFKA_BROKER_PORT[0] +
+      (embededKafka.hasMultiPartition ? "," + l + embededKafka.TEST_KAFKA_BROKER_PORT[0] : "") +
+      (embededKafka.hasMultiCluster ? ";" + l + embededKafka.TEST_KAFKA_BROKER_PORT[1] : "") +
+      (embededKafka.hasMultiCluster && embededKafka.hasMultiPartition ? "," + l + embededKafka.TEST_KAFKA_BROKER_PORT[1] : "");
   }
 
   private List<Person> GenerateList()

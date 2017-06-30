@@ -18,7 +18,6 @@
  */
 package org.apache.apex.malhar.kafka;
 
-import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -50,22 +49,24 @@ import com.datatorrent.api.LocalMode;
 import com.datatorrent.common.util.BaseOperator;
 import com.datatorrent.stram.StramLocalCluster;
 
+
 /**
  * A bunch of test to verify the input operator will be automatically partitioned
  * per kafka partition This test is launching its
  * own Kafka cluster.
  */
 @RunWith(Parameterized.class)
-public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBase
+public abstract class AbstractKafkaInputOperatorTest
 {
 
   private int totalBrokers = 0;
+  private static int testCounter = 0;
 
   private String partition = null;
 
   private String testName = "";
 
-  public static String APPLICATION_PATH = baseDir + File.separator + StramLocalCluster.class.getName() + File.separator;
+  public static AbstractKafkaOperatorTestBase embededKafka;
 
   public class KafkaTestInfo extends TestWatcher
   {
@@ -110,15 +111,15 @@ public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBa
   @Before
   public void before()
   {
-    testName = TEST_TOPIC + testCounter++;
+    testName = AbstractKafkaOperatorTestBase.TEST_TOPIC + testCounter++;
     logger.info("before() test case: {}", testName);
     tupleCollection.clear();
     //reset count for next new test case
     k = 0;
 
-    createTopic(0, testName);
-    if (hasMultiCluster) {
-      createTopic(1, testName);
+    embededKafka.createTopic(0, testName);
+    if (embededKafka.hasMultiCluster) {
+      embededKafka.createTopic(1, testName);
     }
 
   }
@@ -126,8 +127,8 @@ public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBa
   public AbstractKafkaInputOperatorTest(boolean hasMultiCluster, boolean hasMultiPartition, String partition)
   {
     // This class want to initialize several kafka brokers for multiple partitions
-    this.hasMultiCluster = hasMultiCluster;
-    this.hasMultiPartition = hasMultiPartition;
+    embededKafka.hasMultiCluster = hasMultiCluster;
+    embededKafka.hasMultiPartition = hasMultiPartition;
     int cluster = 1 + (hasMultiCluster ? 1 : 0);
     totalBrokers = (1 + (hasMultiPartition ? 1 : 0)) * cluster;
     this.partition = partition;
@@ -203,7 +204,7 @@ public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBa
         hasFailure = false;
         throw new RuntimeException();
       }
-      if (tuple.startsWith(KafkaOperatorTestBase.END_TUPLE)) {
+      if (tuple.startsWith(AbstractKafkaOperatorTestBase.END_TUPLE)) {
         endTuples++;
       }
 
@@ -296,6 +297,8 @@ public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBa
     testInputOperator(true, true);
   }
 
+  public abstract AbstractKafkaTestProducer createProducer(String topic, boolean isMultiPartition, boolean isMultiCluster);
+
   public void testInputOperator(boolean hasFailure, boolean idempotent) throws Exception
   {
     // each broker should get a END_TUPLE message
@@ -304,10 +307,10 @@ public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBa
     logger.info(
         "Test Case: name: {}; totalBrokers: {}; hasFailure: {}; hasMultiCluster: {};" +
         " hasMultiPartition: {}, partition: {}",
-        testName, totalBrokers, hasFailure, hasMultiCluster, hasMultiPartition, partition);
+        testName, totalBrokers, hasFailure, embededKafka.hasMultiCluster, embededKafka.hasMultiPartition, partition);
 
     // Start producer
-    KafkaTestProducer p = new KafkaTestProducer(testName, hasMultiPartition, hasMultiCluster);
+    AbstractKafkaTestProducer p = createProducer(testName, embededKafka.hasMultiPartition, embededKafka.hasMultiCluster);
     p.setSendCount(totalCount);
     Thread t = new Thread(p);
     t.start();
@@ -399,10 +402,10 @@ public abstract class AbstractKafkaInputOperatorTest extends KafkaOperatorTestBa
   private String getClusterConfig()
   {
     String l = "localhost:";
-    return l + TEST_KAFKA_BROKER_PORT[0][0] +
-      (hasMultiPartition ? "," + l + TEST_KAFKA_BROKER_PORT[0][1] : "") +
-      (hasMultiCluster ? ";" + l + TEST_KAFKA_BROKER_PORT[1][0] : "") +
-      (hasMultiCluster && hasMultiPartition ? "," + l + TEST_KAFKA_BROKER_PORT[1][1] : "");
+    return l + AbstractKafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[0] +
+      (embededKafka.hasMultiPartition ? "," + l + AbstractKafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[0] : "") +
+      (embededKafka.hasMultiCluster ? ";" + l + AbstractKafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[1] : "") +
+      (embededKafka.hasMultiCluster && embededKafka.hasMultiPartition ? "," + l + AbstractKafkaOperatorTestBase.TEST_KAFKA_BROKER_PORT[1] : "");
   }
 
 }
