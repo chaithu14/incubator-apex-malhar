@@ -280,10 +280,8 @@ public class KafkaOutputOperatorTest extends KafkaOperatorTestBase
   private String getClusterConfig()
   {
     String l = "localhost:";
-    return l + TEST_KAFKA_BROKER_PORT[0][0] +
-      (hasMultiPartition ? "," + l + TEST_KAFKA_BROKER_PORT[0][1] : "") +
-      (hasMultiCluster ? ";" + l + TEST_KAFKA_BROKER_PORT[1][0] : "") +
-      (hasMultiCluster && hasMultiPartition ? "," + l + TEST_KAFKA_BROKER_PORT[1][1] : "");
+    return l + TEST_KAFKA_BROKER_PORT[0] +
+      (hasMultiCluster ? ";" + l + TEST_KAFKA_BROKER_PORT[1] : "");
   }
 
   private List<Person> GenerateList()

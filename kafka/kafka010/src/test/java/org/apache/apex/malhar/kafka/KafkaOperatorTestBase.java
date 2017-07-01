@@ -49,7 +49,7 @@ public class KafkaOperatorTestBase
 
   public static final String END_TUPLE = "END_TUPLE";
   public static final int[] TEST_ZOOKEEPER_PORT;
-  public static final int[][] TEST_KAFKA_BROKER_PORT;
+  public static final int[] TEST_KAFKA_BROKER_PORT;
   public static final String TEST_TOPIC = "testtopic";
   public static int testCounter = 0;
 
@@ -72,17 +72,14 @@ public class KafkaOperatorTestBase
     }
 
     TEST_ZOOKEEPER_PORT = new int[]{p[0], p[1]};
-    TEST_KAFKA_BROKER_PORT = new int[][]{
-      new int[]{p[2], p[3]},
-      new int[]{p[4], p[5]}
-    };
+    TEST_KAFKA_BROKER_PORT = new int[]{p[2], p[3]};
   }
 
   static final org.slf4j.Logger logger = LoggerFactory.getLogger(KafkaOperatorTestBase.class);
   // since Kafka 0.8 use KafkaServerStatble instead of KafkaServer
 
   // multiple brokers in multiple cluster
-  private static KafkaServerStartable[][] broker = new KafkaServerStartable[2][2];
+  private static KafkaServerStartable[] broker = new KafkaServerStartable[2];
 
   // multiple cluster
   private static ServerCnxnFactory[] zkFactory = new ServerCnxnFactory[2];
@@ -94,9 +91,7 @@ public class KafkaOperatorTestBase
   private static final String zkBaseDir = "zookeeper-server-data";
   private static final String kafkaBaseDir = "kafka-server-data";
   private static final String[] zkdir = new String[]{"zookeeper-server-data/1", "zookeeper-server-data/2"};
-  private static final String[][] kafkadir = new String[][]{
-      new String[]{"kafka-server-data/1/1", "kafka-server-data/1/2"},
-      new String[]{"kafka-server-data/2/1", "kafka-server-data/2/2"}};
+  private static final String[] kafkadir = new String[]{"kafka-server-data/1/1", "kafka-server-data/1/2"};
   protected boolean hasMultiPartition = false;
   protected boolean hasMultiCluster = false;
 
@@ -142,15 +137,15 @@ public class KafkaOperatorTestBase
   {
     Properties props = new Properties();
     props.setProperty("broker.id", "" + clusterid * 10 + brokerid);
-    props.setProperty("log.dirs", new File(baseDir, kafkadir[clusterid][brokerid]).toString());
+    props.setProperty("log.dirs", new File(baseDir, kafkadir[clusterid]).toString());
     props.setProperty("zookeeper.connect", "localhost:" + TEST_ZOOKEEPER_PORT[clusterid]);
-    props.setProperty("port", "" + TEST_KAFKA_BROKER_PORT[clusterid][brokerid]);
+    props.setProperty("port", "" + TEST_KAFKA_BROKER_PORT[clusterid]);
     props.setProperty("default.replication.factor", "1");
     // set this to 50000 to boost the performance so most test data are in memory before flush to disk
     props.setProperty("log.flush.interval.messages", "50000");
 
-    broker[clusterid][brokerid] = new KafkaServerStartable(new KafkaConfig(props));
-    broker[clusterid][brokerid].startup();
+    broker[clusterid] = new KafkaServerStartable(new KafkaConfig(props));
+    broker[clusterid].startup();
 
   }
 
@@ -161,9 +156,9 @@ public class KafkaOperatorTestBase
     //boolean[][] startable = new boolean[][] { new boolean[] { true, hasMultiPartition },
     //  new boolean[] { hasMultiCluster, hasMultiCluster && hasMultiPartition } };
     startKafkaServer(0, 0);
-    startKafkaServer(0, 1);
+    //startKafkaServer(0, 1);
     startKafkaServer(1, 0);
-    startKafkaServer(1, 1);
+    //startKafkaServer(1, 1);
 
     // startup is asynch operation. wait 2 sec for server to startup
 
@@ -172,12 +167,10 @@ public class KafkaOperatorTestBase
   public static void stopKafkaServer()
   {
     for (int i = 0; i < broker.length; i++) {
-      for (int j = 0; j < broker[i].length; j++) {
-        if (broker[i][j] != null) {
-          broker[i][j].shutdown();
-          broker[i][j].awaitShutdown();
-          broker[i][j] = null;
-        }
+      if (broker[i] != null) {
+        broker[i].shutdown();
+        broker[i].awaitShutdown();
+        broker[i] = null;
       }
     }
   }
