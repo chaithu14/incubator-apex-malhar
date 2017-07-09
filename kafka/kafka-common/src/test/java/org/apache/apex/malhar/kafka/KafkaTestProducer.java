@@ -69,19 +69,7 @@ public class KafkaTestProducer implements Runnable
 
   private Properties createProducerConfig(int cid)
   {
-    Properties props = new Properties();
-    props.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-    props.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-    props.setProperty(ProducerConfig.PARTITIONER_CLASS_CONFIG, KafkaTestPartitioner.class.getName());
-    String brokerList = "localhost:" + AbstractEmbeddedKafka.TEST_KAFKA_BROKER_PORT[cid];
-    brokerList += hasPartition ? (",localhost:" + AbstractEmbeddedKafka.TEST_KAFKA_BROKER_PORT[cid]) : "";
-    props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, brokerList);
-    props.setProperty(ProducerConfig.METADATA_MAX_AGE_CONFIG, "20000");
-    props.setProperty(ProducerConfig.ACKS_CONFIG, getAckType());
-    props.setProperty(ProducerConfig.RETRIES_CONFIG, "1");
-    props.setProperty(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION, "1");
-
-    return props;
+    return createProducerConfig(cid, "localhost:" + AbstractEmbeddedKafka.TEST_KAFKA_BROKER_PORT[cid]);
   }
 
   private Properties createProducerConfig(int cid, String brokerId)
